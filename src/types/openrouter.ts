@@ -20,6 +20,9 @@ export interface OpenRouterModelRaw {
     input_cache_write?: string;
     web_search?: string;
     internal_reasoning?: string;
+    image?: string;
+    image_output?: string;
+    [key: string]: string | undefined;
   };
   top_provider?: {
     context_length: number;
@@ -69,12 +72,14 @@ export interface ProcessedModel {
   intelligenceIndex: number | null;
   codingIndex: number | null;
   agenticIndex: number | null;
+  t2iLeaderboardElo: number | null;
   
   // Design Arena highest Elo if available
   arenaElo: number | null;
   
   // Capabilities
   isMultimodal: boolean;
+  isImageOutput: boolean;
   inputModalities: string[];
   outputModalities: string[];
   hasReasoning: boolean;
@@ -90,6 +95,7 @@ export type AxisMetricKey =
   | 'intelligenceIndex' 
   | 'codingIndex' 
   | 'agenticIndex' 
+  | 't2iLeaderboardElo'
   | 'contextLength' 
   | 'arenaElo';
 
@@ -149,6 +155,13 @@ export const AXIS_OPTIONS: AxisOption[] = [
     format: (val) => val !== null ? `${val.toFixed(1)}` : 'N/A'
   },
   {
+    key: 't2iLeaderboardElo',
+    label: 'HuggingFace Text-to-Image ELO',
+    unit: 'Elo',
+    description: 'Artificial Analysis / Hugging Face Text-to-Image Arena ELO rating',
+    format: (val) => val !== null ? `${Math.round(val)}` : 'N/A'
+  },
+  {
     key: 'contextLength',
     label: 'Context Window (Tokens)',
     unit: 'k tok',
@@ -158,9 +171,9 @@ export const AXIS_OPTIONS: AxisOption[] = [
   },
   {
     key: 'arenaElo',
-    label: 'Design Arena ELO',
+    label: 'Design Arena ELO (Overall)',
     unit: 'Elo',
-    description: 'Arena ELO rating across visual/coding tasks',
+    description: 'Design Arena benchmark ELO rating across visual/coding tasks',
     format: (val) => val !== null ? `${Math.round(val)}` : 'N/A'
   }
 ];

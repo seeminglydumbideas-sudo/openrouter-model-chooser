@@ -46,6 +46,11 @@ export const ModelDetailModal: React.FC<ModelDetailModalProps> = ({
                     FREE
                   </span>
                 )}
+                {model.isImageOutput && (
+                  <span className="rounded bg-pink-500/20 text-pink-300 border border-pink-500/40 px-2 py-0.5 text-[10px] font-bold">
+                    IMAGE GEN
+                  </span>
+                )}
               </div>
               <div className="flex items-center gap-2 text-xs text-slate-400 font-mono mt-0.5">
                 <span>{model.id}</span>
@@ -145,6 +150,10 @@ export const ModelDetailModal: React.FC<ModelDetailModalProps> = ({
                   <div>
                     <span className="text-slate-400">Input Modalities:</span>
                     <div className="font-semibold text-cyan-300">{model.inputModalities.join(', ')}</div>
+                  </div>
+                  <div>
+                    <span className="text-slate-400">Image Output:</span>
+                    <div className="font-semibold text-pink-300">{model.isImageOutput ? 'Supported (Text-to-Image / Multi)' : 'No'}</div>
                   </div>
                   <div>
                     <span className="text-slate-400">Reasoning Support:</span>

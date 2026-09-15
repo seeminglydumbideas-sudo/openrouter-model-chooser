@@ -1,6 +1,6 @@
 import React from 'react';
 import type { AxisMetricKey } from '../types/openrouter';
-import { Code2, Bot, Brain, Sparkles, Maximize2, Trophy, Flame } from 'lucide-react';
+import { Code2, Bot, Brain, Sparkles, Maximize2, Trophy, Flame, Palette } from 'lucide-react';
 
 export interface PresetConfig {
   id: string;
@@ -13,6 +13,7 @@ export interface PresetConfig {
   yLog?: boolean;
   filterFreeOnly?: boolean;
   filterReasoningOnly?: boolean;
+  filterImageOutputOnly?: boolean;
 }
 
 interface PresetBarProps {
@@ -50,6 +51,17 @@ export const PRESETS: PresetConfig[] = [
     yAxis: 'intelligenceIndex',
     xLog: true,
     yLog: false,
+  },
+  {
+    id: 'huggingFaceT2I',
+    name: '🖼️ HuggingFace T2I ELO',
+    description: 'Price vs Artificial Analysis / HuggingFace Text-to-Image Leaderboard ELO',
+    icon: <Palette className="h-4 w-4 text-pink-400" />,
+    xAxis: 'blendedCostPerM',
+    yAxis: 't2iLeaderboardElo',
+    xLog: true,
+    yLog: false,
+    filterImageOutputOnly: true,
   },
   {
     id: 'value',

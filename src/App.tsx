@@ -30,6 +30,7 @@ export default function App() {
   const [filterFreeOnly, setFilterFreeOnly] = useState<boolean>(false);
   const [filterReasoningOnly, setFilterReasoningOnly] = useState<boolean>(false);
   const [filterMultimodalOnly, setFilterMultimodalOnly] = useState<boolean>(false);
+  const [filterImageOutputOnly, setFilterImageOutputOnly] = useState<boolean>(false);
 
   // Live fetch on load
   const loadLiveModels = useCallback(async () => {
@@ -60,6 +61,7 @@ export default function App() {
     if (preset.yLog !== undefined) setIsYLog(preset.yLog);
     if (preset.filterFreeOnly !== undefined) setFilterFreeOnly(preset.filterFreeOnly);
     if (preset.filterReasoningOnly !== undefined) setFilterReasoningOnly(preset.filterReasoningOnly);
+    if (preset.filterImageOutputOnly !== undefined) setFilterImageOutputOnly(preset.filterImageOutputOnly);
     
     if (activeTab !== 'scatter') setActiveTab('scatter');
   };
@@ -111,6 +113,8 @@ export default function App() {
             setFilterReasoningOnly={setFilterReasoningOnly}
             filterMultimodalOnly={filterMultimodalOnly}
             setFilterMultimodalOnly={setFilterMultimodalOnly}
+            filterImageOutputOnly={filterImageOutputOnly}
+            setFilterImageOutputOnly={setFilterImageOutputOnly}
           />
         )}
 

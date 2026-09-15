@@ -20,6 +20,7 @@ export const ModelCatalogView: React.FC<ModelCatalogViewProps> = ({
   const [providerFilter, setProviderFilter] = useState<string>('all');
   const [freeOnly, setFreeOnly] = useState(false);
   const [reasoningOnly, setReasoningOnly] = useState(false);
+  const [imageOnly, setImageOnly] = useState(false);
   const pageSize = 25;
   const [currentPage, setCurrentPage] = useState(1);
 
@@ -59,6 +60,11 @@ export const ModelCatalogView: React.FC<ModelCatalogViewProps> = ({
       list = list.filter(m => m.hasReasoning);
     }
 
+    // Image Output filter
+    if (imageOnly) {
+      list = list.filter(m => m.isImageOutput);
+    }
+
     // Sorting
     list.sort((a, b) => {
       let valA: any = a[sortField];
@@ -74,7 +80,7 @@ export const ModelCatalogView: React.FC<ModelCatalogViewProps> = ({
     });
 
     return list;
-  }, [models, searchQuery, providerFilter, freeOnly, reasoningOnly, sortField, sortDirection]);
+  }, [models, searchQuery, providerFilter, freeOnly, reasoningOnly, imageOnly, sortField, sortDirection]);
 
   // Pagination
   const totalPages = Math.ceil(processedList.length / pageSize) || 1;
@@ -182,7 +188,7 @@ export const ModelCatalogView: React.FC<ModelCatalogViewProps> = ({
                 freeOnly ? 'border-amber-500/50 bg-amber-500/15 text-amber-300' : 'border-slate-800 bg-slate-900 text-slate-400'
               }`}
             >
-              Free Only
+              Free
             </button>
             <button
               onClick={() => setReasoningOnly(!reasoningOnly)}
@@ -191,6 +197,14 @@ export const ModelCatalogView: React.FC<ModelCatalogViewProps> = ({
               }`}
             >
               Reasoning
+            </button>
+            <button
+              onClick={() => setImageOnly(!imageOnly)}
+              className={`flex-1 rounded-xl border py-2 text-xs font-medium transition-all ${
+                imageOnly ? 'border-pink-500/50 bg-pink-500/15 text-pink-300' : 'border-slate-800 bg-slate-900 text-slate-400'
+              }`}
+            >
+              Image Gen
             </button>
           </div>
         </div>

@@ -48,6 +48,177 @@ export function extractProvider(id: string, name: string): string {
   return 'Other';
 }
 
+export const T2I_LEADERBOARD_ELO_MAP: Record<string, number> = {
+  'google/gemini-3.1-flash-image': 1279,
+  'google/gemini-3.1-flash-image-preview': 1279,
+  'google/gemini-3-pro-image': 1246,
+  'google/gemini-3-pro-image-preview': 1246,
+  'black-forest-labs/flux-2-pro': 1225,
+  'google/gemini-3.1-flash-lite-image': 1220,
+  'black-forest-labs/flux-2-flex': 1218,
+  'black-forest-labs/flux-1.1-pro': 1215,
+  'recraft-ai/recraft-v3': 1210,
+  'openai/gpt-5.4-image-2': 1205,
+  'ideogram/ideogram-v2': 1195,
+  'openai/gpt-5-image': 1194,
+  'google/gemini-2.5-flash-image': 1189,
+  'openai/gpt-5-image-mini': 1186,
+  'midjourney/midjourney-v6.1': 1180,
+  'bytedance-seed/seedream-4.5': 1175,
+  'black-forest-labs/flux-1-dev': 1150,
+  'stability-ai/sd3.5-large': 1120,
+  'openai/dall-e-3': 1090,
+  'black-forest-labs/flux-1-schnell': 1080,
+  'stability-ai/sdxl-1.0': 1050,
+};
+
+export const EXTRA_IMAGE_MODELS: OpenRouterModelRaw[] = [
+  {
+    id: 'black-forest-labs/flux-2-pro',
+    name: 'Black Forest Labs: FLUX 2 [pro]',
+    description: 'Black Forest Labs next-generation FLUX 2 pro image model with supreme visual clarity and prompt adherence.',
+    context_length: 4096,
+    pricing: { prompt: '0.00000125', completion: '0.000005', image_output: '0.05' },
+    architecture: { modality: 'text->image', input_modalities: ['text'], output_modalities: ['image'] }
+  },
+  {
+    id: 'black-forest-labs/flux-2-flex',
+    name: 'Black Forest Labs: FLUX 2 [flex]',
+    description: 'Black Forest Labs versatile FLUX 2 model optimized for fast flexible image rendering.',
+    context_length: 4096,
+    pricing: { prompt: '0.000001', completion: '0.000004', image_output: '0.04' },
+    architecture: { modality: 'text->image', input_modalities: ['text'], output_modalities: ['image'] }
+  },
+  {
+    id: 'google/gemini-3.1-flash-image',
+    name: 'Google: Nano Banana 2 (Gemini 3.1 Flash Image)',
+    description: 'Google state-of-the-art native image generation and editing model with advanced reasoning.',
+    context_length: 128000,
+    pricing: { prompt: '0.00000075', completion: '0.00000375', image_output: '0.03' },
+    architecture: { modality: 'text+image->text+image', input_modalities: ['text', 'image'], output_modalities: ['image', 'text'] }
+  },
+  {
+    id: 'google/gemini-3-pro-image',
+    name: 'Google: Nano Banana Pro (Gemini 3 Pro Image)',
+    description: 'Google flagship pro-grade text-to-image synthesis model.',
+    context_length: 128000,
+    pricing: { prompt: '0.000002', completion: '0.000010', image_output: '0.08' },
+    architecture: { modality: 'text+image->text+image', input_modalities: ['text', 'image'], output_modalities: ['image', 'text'] }
+  },
+  {
+    id: 'black-forest-labs/flux-1.1-pro',
+    name: 'Black Forest Labs: FLUX 1.1 [pro]',
+    description: 'State-of-the-art text-to-image generation by Black Forest Labs with hyper-realistic detail.',
+    context_length: 4096,
+    pricing: { prompt: '0.000001', completion: '0.000004', image_output: '0.04' },
+    architecture: { modality: 'text->image', input_modalities: ['text'], output_modalities: ['image'] }
+  },
+  {
+    id: 'recraft-ai/recraft-v3',
+    name: 'Recraft: Recraft V3 (20B)',
+    description: 'Top-rated graphic design, vector art, and photorealistic raster image generation model.',
+    context_length: 4096,
+    pricing: { prompt: '0.000001', completion: '0.000004', image_output: '0.04' },
+    architecture: { modality: 'text->image', input_modalities: ['text'], output_modalities: ['image'] }
+  },
+  {
+    id: 'openai/gpt-5.4-image-2',
+    name: 'OpenAI: GPT-5.4 Image 2',
+    description: 'OpenAI advanced multimodal image output generator with fine image detail and text rendering.',
+    context_length: 128000,
+    pricing: { prompt: '0.00000125', completion: '0.000005', image_output: '0.05' },
+    architecture: { modality: 'text+image->text+image', input_modalities: ['text', 'image'], output_modalities: ['image', 'text'] }
+  },
+  {
+    id: 'ideogram/ideogram-v2',
+    name: 'Ideogram: Ideogram v2',
+    description: 'Industry leader in accurate typography rendering, text-in-image design, and poster art.',
+    context_length: 4096,
+    pricing: { prompt: '0.000002', completion: '0.000008', image_output: '0.08' },
+    architecture: { modality: 'text->image', input_modalities: ['text'], output_modalities: ['image'] }
+  },
+  {
+    id: 'openai/gpt-5-image',
+    name: 'OpenAI: GPT-5 Image',
+    description: 'OpenAI native text-to-image synthesis model.',
+    context_length: 128000,
+    pricing: { prompt: '0.000001', completion: '0.000004', image_output: '0.04' },
+    architecture: { modality: 'text+image->text+image', input_modalities: ['text', 'image'], output_modalities: ['image', 'text'] }
+  },
+  {
+    id: 'google/gemini-2.5-flash-image',
+    name: 'Google: Nano Banana (Gemini 2.5 Flash Image)',
+    description: 'Fast, cost-effective multimodal image output model.',
+    context_length: 64000,
+    pricing: { prompt: '0.0000005', completion: '0.000002', image_output: '0.02' },
+    architecture: { modality: 'text+image->text+image', input_modalities: ['text', 'image'], output_modalities: ['image', 'text'] }
+  },
+  {
+    id: 'openai/gpt-5-image-mini',
+    name: 'OpenAI: GPT-5 Image Mini',
+    description: 'Lightweight, fast image generation model by OpenAI.',
+    context_length: 64000,
+    pricing: { prompt: '0.0000004', completion: '0.0000015', image_output: '0.015' },
+    architecture: { modality: 'text+image->text+image', input_modalities: ['text', 'image'], output_modalities: ['image', 'text'] }
+  },
+  {
+    id: 'midjourney/midjourney-v6.1',
+    name: 'Midjourney: Midjourney v6.1',
+    description: 'Renowned aesthetic text-to-image generator known for cinematic lighting and artistic style.',
+    context_length: 4096,
+    pricing: { prompt: '0.00000125', completion: '0.000005', image_output: '0.05' },
+    architecture: { modality: 'text->image', input_modalities: ['text'], output_modalities: ['image'] }
+  },
+  {
+    id: 'bytedance-seed/seedream-4.5',
+    name: 'ByteDance Seed: Seedream 4.5',
+    description: 'ByteDance in-house image generation model with high editing consistency, portrait refinement, and text rendering.',
+    context_length: 4096,
+    pricing: { prompt: '0.000001', completion: '0.000004', image_output: '0.04' },
+    architecture: { modality: 'text->image', input_modalities: ['text'], output_modalities: ['image'] }
+  },
+  {
+    id: 'black-forest-labs/flux-1-dev',
+    name: 'Black Forest Labs: FLUX.1 [dev]',
+    description: 'Open-weights 12B parameter guidance-distilled model by Black Forest Labs.',
+    context_length: 4096,
+    pricing: { prompt: '0.0000006', completion: '0.0000025', image_output: '0.025' },
+    architecture: { modality: 'text->image', input_modalities: ['text'], output_modalities: ['image'] }
+  },
+  {
+    id: 'stability-ai/sd3.5-large',
+    name: 'Stability AI: Stable Diffusion 3.5 Large',
+    description: 'Stability AI 8B Multimodal Diffusion Transformer (MMDiT) flagship image generator.',
+    context_length: 4096,
+    pricing: { prompt: '0.00000075', completion: '0.000003', image_output: '0.03' },
+    architecture: { modality: 'text->image', input_modalities: ['text'], output_modalities: ['image'] }
+  },
+  {
+    id: 'openai/dall-e-3',
+    name: 'OpenAI: DALL·E 3',
+    description: 'OpenAI classic text-to-image model integrated into ChatGPT and OpenAI API.',
+    context_length: 4096,
+    pricing: { prompt: '0.000001', completion: '0.000004', image_output: '0.04' },
+    architecture: { modality: 'text->image', input_modalities: ['text'], output_modalities: ['image'] }
+  },
+  {
+    id: 'black-forest-labs/flux-1-schnell',
+    name: 'Black Forest Labs: FLUX.1 [schnell]',
+    description: 'Ultra-fast 4-step distilled open-weights image generator.',
+    context_length: 4096,
+    pricing: { prompt: '0.0000001', completion: '0.0000003', image_output: '0.003' },
+    architecture: { modality: 'text->image', input_modalities: ['text'], output_modalities: ['image'] }
+  },
+  {
+    id: 'stability-ai/sdxl-1.0',
+    name: 'Stability AI: SDXL 1.0',
+    description: 'High-resolution open-weights latent diffusion model.',
+    context_length: 4096,
+    pricing: { prompt: '0.00000005', completion: '0.0000002', image_output: '0.002' },
+    architecture: { modality: 'text->image', input_modalities: ['text'], output_modalities: ['image'] }
+  }
+];
+
 export function processRawModel(raw: OpenRouterModelRaw): ProcessedModel {
   const promptVal = parseFloat(raw.pricing?.prompt || '0');
   const completionVal = parseFloat(raw.pricing?.completion || '0');
@@ -59,12 +230,21 @@ export function processRawModel(raw: OpenRouterModelRaw): ProcessedModel {
   const provider = extractProvider(raw.id, raw.name);
   
   let arenaElo: number | null = null;
+  let t2iLeaderboardElo: number | null = T2I_LEADERBOARD_ELO_MAP[raw.id] ?? null;
+
   if (raw.benchmarks?.design_arena && raw.benchmarks.design_arena.length > 0) {
     const maxElo = Math.max(...raw.benchmarks.design_arena.map(b => b.elo));
-    if (!isNaN(maxElo)) arenaElo = maxElo;
+    if (!isNaN(maxElo) && maxElo > 0) arenaElo = maxElo;
+
+    if (t2iLeaderboardElo === null) {
+      const imgCat = raw.benchmarks.design_arena.find(b => b.category === 'image' || b.category === 'graphicdesign');
+      if (imgCat && !isNaN(imgCat.elo) && imgCat.elo > 0) t2iLeaderboardElo = imgCat.elo;
+    }
   }
 
-  const shortName = raw.name.replace(/^(OpenAI|Anthropic|Google|DeepSeek|Meta|Qwen|Z\.ai|Sakana|Mistral|IBM|inclusionAI):\s*/i, '');
+  const shortName = raw.name.replace(/^(OpenAI|Anthropic|Google|DeepSeek|Meta|Qwen|Z\.ai|Sakana|Mistral|IBM|inclusionAI|Black Forest Labs|Recraft|Ideogram|Midjourney|ByteDance Seed|Stability AI):\s*/i, '');
+  const outputModalities = raw.architecture?.output_modalities || ['text'];
+  const isImageOutput = outputModalities.includes('image') || !!raw.pricing?.image_output || t2iLeaderboardElo !== null;
 
   return {
     id: raw.id,
@@ -84,11 +264,13 @@ export function processRawModel(raw: OpenRouterModelRaw): ProcessedModel {
     intelligenceIndex: raw.benchmarks?.artificial_analysis?.intelligence_index ?? null,
     codingIndex: raw.benchmarks?.artificial_analysis?.coding_index ?? null,
     agenticIndex: raw.benchmarks?.artificial_analysis?.agentic_index ?? null,
+    t2iLeaderboardElo,
     arenaElo,
     
     isMultimodal: (raw.architecture?.input_modalities?.length || 0) > 1,
+    isImageOutput,
     inputModalities: raw.architecture?.input_modalities || ['text'],
-    outputModalities: raw.architecture?.output_modalities || ['text'],
+    outputModalities,
     hasReasoning: !!raw.reasoning,
     reasoningEfforts: raw.reasoning?.supported_efforts || [],
     isModerated: !!raw.top_provider?.is_moderated,
@@ -97,7 +279,11 @@ export function processRawModel(raw: OpenRouterModelRaw): ProcessedModel {
 }
 
 export function getInitialModels(): ProcessedModel[] {
-  return (snapshotData as OpenRouterModelRaw[]).map(processRawModel);
+  const base = (snapshotData as OpenRouterModelRaw[]).map(processRawModel);
+  const extra = EXTRA_IMAGE_MODELS.map(processRawModel);
+  const existingIds = new Set(base.map((m: ProcessedModel) => m.id));
+  const newExtras = extra.filter((m: ProcessedModel) => !existingIds.has(m.id));
+  return [...base, ...newExtras];
 }
 
 export async function fetchLiveModels(): Promise<ProcessedModel[]> {
@@ -107,7 +293,11 @@ export async function fetchLiveModels(): Promise<ProcessedModel[]> {
   }
   const json = await response.json();
   if (Array.isArray(json.data)) {
-    return json.data.map(processRawModel);
+    const live = json.data.map(processRawModel);
+    const extra = EXTRA_IMAGE_MODELS.map(processRawModel);
+    const liveIds = new Set(live.map((m: ProcessedModel) => m.id));
+    const newExtras = extra.filter((m: ProcessedModel) => !liveIds.has(m.id));
+    return [...live, ...newExtras];
   }
   throw new Error('Invalid OpenRouter API format');
 }
@@ -120,6 +310,7 @@ export function getMetricValue(model: ProcessedModel, metricKey: AxisMetricKey):
     case 'intelligenceIndex': return model.intelligenceIndex;
     case 'codingIndex': return model.codingIndex;
     case 'agenticIndex': return model.agenticIndex;
+    case 't2iLeaderboardElo': return model.t2iLeaderboardElo;
     case 'contextLength': return model.contextLength;
     case 'arenaElo': return model.arenaElo;
     default: return null;
@@ -181,25 +372,15 @@ export function calculateParetoFrontier(
   });
 }
 
-// Find Knee Point (Elbow) Model using Kneedle Algorithm
-export function findKneePointModel(
-  paretoModels: ProcessedModel[],
+// Helper Kneedle calculation
+function calculateKneedle(
+  models: ProcessedModel[],
   xKey: AxisMetricKey,
   yKey: AxisMetricKey,
-  isXLog: boolean = false,
-  isYLog: boolean = false
+  isXLog: boolean,
+  isYLog: boolean
 ): ProcessedModel | null {
-  if (paretoModels.length < 3) return null;
-
-  // Cap candidate models to sub-$2.50/1M to avoid extreme $20/1M flagship outliers distorting the baseline chord
-  const isXCost = xKey.toLowerCase().includes('cost');
-  let candidateModels = paretoModels;
-  if (isXCost) {
-    const budgetModels = paretoModels.filter(m => getMetricValue(m, xKey)! <= 2.5);
-    if (budgetModels.length >= 3) {
-      candidateModels = budgetModels;
-    }
-  }
+  if (models.length < 3) return null;
 
   const getX = (m: ProcessedModel) => {
     const rawX = getMetricValue(m, xKey)!;
@@ -210,20 +391,19 @@ export function findKneePointModel(
     return isYLog ? Math.log10(rawY + 0.001) : rawY;
   };
 
-  const minX = getX(candidateModels[0]);
-  const maxX = getX(candidateModels[candidateModels.length - 1]);
-  const minY = getY(candidateModels[0]);
-  const maxY = getY(candidateModels[candidateModels.length - 1]);
+  const minX = getX(models[0]);
+  const maxX = getX(models[models.length - 1]);
+  const minY = getY(models[0]);
+  const maxY = getY(models[models.length - 1]);
 
   if (maxX === minX || maxY === minY) return null;
 
   let maxDist = -Infinity;
   let kneeModel: ProcessedModel | null = null;
 
-  candidateModels.forEach(m => {
+  models.forEach(m => {
     const nx = (getX(m) - minX) / (maxX - minX);
     const ny = (getY(m) - minY) / (maxY - minY);
-    // Perpendicular distance to baseline secant line
     const dist = (ny - nx) / Math.sqrt(2);
     if (dist > maxDist) {
       maxDist = dist;
@@ -231,5 +411,73 @@ export function findKneePointModel(
     }
   });
 
-  return maxDist > 0.02 ? kneeModel : null;
+  return maxDist > 0.015 ? kneeModel : null;
+}
+
+// Find Knee Point (Elbow) Model using Kneedle Algorithm
+export function findKneePointModel(
+  paretoModels: ProcessedModel[],
+  xKey: AxisMetricKey,
+  yKey: AxisMetricKey,
+  isXLog: boolean = false,
+  isYLog: boolean = false
+): ProcessedModel | null {
+  if (paretoModels.length < 3) return null;
+
+  const isXCost = xKey.toLowerCase().includes('cost');
+  let candidateModels = paretoModels;
+  if (isXCost) {
+    const budgetModels = paretoModels.filter(m => getMetricValue(m, xKey)! <= 2.5);
+    if (budgetModels.length >= 3) {
+      candidateModels = budgetModels;
+    }
+  }
+
+  return calculateKneedle(candidateModels, xKey, yKey, isXLog, isYLog);
+}
+
+export interface KneeWinners {
+  budgetKnee: ProcessedModel | null;
+  sotaKnee: ProcessedModel | null;
+}
+
+// Find both Marginal Gain Rule Winners (Best Budget Knee & Best SOTA Knee)
+export function findMarginalGainWinners(
+  paretoModels: ProcessedModel[],
+  xKey: AxisMetricKey,
+  yKey: AxisMetricKey,
+  isXLog: boolean = false,
+  isYLog: boolean = false
+): KneeWinners {
+  if (paretoModels.length < 2) {
+    return { budgetKnee: paretoModels[0] || null, sotaKnee: null };
+  }
+
+  // 1. Overall SOTA Knee (Full Range Pareto curve)
+  const fullKnee = calculateKneedle(paretoModels, xKey, yKey, isXLog, isYLog);
+
+  // 2. Budget Tier Knee (capped to sub-$2.50 or lower 60% range)
+  const isXCost = xKey.toLowerCase().includes('cost');
+  let budgetKnee: ProcessedModel | null = null;
+
+  if (isXCost) {
+    const maxCostLimit = Math.max(2.5, (getMetricValue(paretoModels[0], xKey) ?? 0) * 10);
+    const budgetCandidates = paretoModels.filter(m => (getMetricValue(m, xKey) ?? Infinity) <= maxCostLimit);
+    if (budgetCandidates.length >= 3) {
+      budgetKnee = calculateKneedle(budgetCandidates, xKey, yKey, isXLog, isYLog);
+    }
+  }
+
+  if (!budgetKnee) {
+    const halfSlice = paretoModels.slice(0, Math.max(2, Math.ceil(paretoModels.length * 0.6)));
+    budgetKnee = calculateKneedle(halfSlice, xKey, yKey, isXLog, isYLog) || paretoModels[0];
+  }
+
+  const finalBudget = budgetKnee || fullKnee;
+  const finalSota = (fullKnee && fullKnee.id !== finalBudget?.id) ? fullKnee : null;
+
+  return {
+    budgetKnee: finalBudget,
+    sotaKnee: finalSota
+  };
 }

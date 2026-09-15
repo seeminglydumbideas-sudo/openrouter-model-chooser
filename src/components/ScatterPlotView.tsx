@@ -13,8 +13,8 @@ import {
 } from 'recharts';
 import type { ProcessedModel, AxisMetricKey } from '../types/openrouter';
 import { AXIS_OPTIONS } from '../types/openrouter';
-import { getMetricValue, calculateParetoFrontier, findKneePointModel, getProviderColor } from '../services/modelService';
-import { Search, Layers, Info, Sparkles, Sliders, Target, ExternalLink } from 'lucide-react';
+import { getMetricValue, calculateParetoFrontier, findMarginalGainWinners, getProviderColor } from '../services/modelService';
+import { Search, Layers, Info, Sparkles, Sliders, ExternalLink, Zap, Trophy } from 'lucide-react';
 
 interface ScatterPlotViewProps {
   models: ProcessedModel[];
@@ -40,6 +40,8 @@ interface ScatterPlotViewProps {
   setFilterReasoningOnly: (val: boolean) => void;
   filterMultimodalOnly: boolean;
   setFilterMultimodalOnly: (val: boolean) => void;
+  filterImageOutputOnly: boolean;
+  setFilterImageOutputOnly: (val: boolean) => void;
 }
 
 export const ScatterPlotView: React.FC<ScatterPlotViewProps> = ({
@@ -66,6 +68,8 @@ export const ScatterPlotView: React.FC<ScatterPlotViewProps> = ({
   setFilterReasoningOnly,
   filterMultimodalOnly,
   setFilterMultimodalOnly,
+  filterImageOutputOnly,
+  setFilterImageOutputOnly,
 }) => {
   const [sizeMetric, setSizeMetric] = useState<'context' | 'cost' | 'equal'>('context');
   const [excludeBatch, setExcludeBatch] = useState<boolean>(true);
@@ -104,6 +108,8 @@ export const ScatterPlotView: React.FC<ScatterPlotViewProps> = ({
       if (filterReasoningOnly && !m.hasReasoning) return false;
       // Multimodal
       if (filterMultimodalOnly && !m.isMultimodal) return false;
+      // Image Output
+      if (filterImageOutputOnly && !m.isImageOutput) return false;
 
       // Metric presence check
       const xVal = getMetricValue(m, xAxisKey);
@@ -124,6 +130,7 @@ export const ScatterPlotView: React.FC<ScatterPlotViewProps> = ({
     filterFreeOnly, 
     filterReasoningOnly, 
     filterMultimodalOnly,
+    filterImageOutputOnly,
     xAxisKey, 
     yAxisKey, 
     isXLog, 
@@ -138,10 +145,10 @@ export const ScatterPlotView: React.FC<ScatterPlotViewProps> = ({
 
   const paretoIds = useMemo(() => new Set(paretoModels.map(m => m.id)), [paretoModels]);
 
-  // Knee Model calculation (Elbow of Pareto curve)
-  const kneeModel = useMemo(() => {
-    if (!showPareto || paretoModels.length < 3) return null;
-    return findKneePointModel(paretoModels, xAxisKey, yAxisKey, isXLog, isYLog);
+  // Knee Model calculation (Marginal Gain Rule Winners: Budget Knee & SOTA Knee)
+  const kneeWinners = useMemo(() => {
+    if (!showPareto || paretoModels.length < 2) return { budgetKnee: null, sotaKnee: null };
+    return findMarginalGainWinners(paretoModels, xAxisKey, yAxisKey, isXLog, isYLog);
   }, [paretoModels, xAxisKey, yAxisKey, isXLog, isYLog, showPareto]);
 
   // Secant baseline line points
@@ -170,7 +177,9 @@ export const ScatterPlotView: React.FC<ScatterPlotViewProps> = ({
 
       const color = getProviderColor(m.provider);
       const isPareto = paretoIds.has(m.id);
-      const isKnee = kneeModel?.id === m.id;
+      const isBudgetKnee = kneeWinners.budgetKnee?.id === m.id;
+      const isSotaKnee = kneeWinners.sotaKnee?.id === m.id;
+      const isKnee = isBudgetKnee || isSotaKnee;
       const isSelected = selectedModel?.id === m.id;
 
       return {
@@ -180,11 +189,13 @@ export const ScatterPlotView: React.FC<ScatterPlotViewProps> = ({
         model: m,
         color: color.hex,
         isPareto,
+        isBudgetKnee,
+        isSotaKnee,
         isKnee,
         isSelected
       };
     });
-  }, [filteredModels, xAxisKey, yAxisKey, sizeMetric, paretoIds, kneeModel, selectedModel]);
+  }, [filteredModels, xAxisKey, yAxisKey, sizeMetric, paretoIds, kneeWinners, selectedModel]);
 
   // Pareto line points sorted
   const paretoLineData = useMemo(() => {
@@ -362,6 +373,17 @@ export const ScatterPlotView: React.FC<ScatterPlotViewProps> = ({
               >
                 <span>Multimodal</span>
               </button>
+
+              <button
+                onClick={() => setFilterImageOutputOnly(!filterImageOutputOnly)}
+                className={`flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-medium transition-all shrink-0 ${
+                  filterImageOutputOnly
+                    ? 'border-pink-500/50 bg-pink-500/15 text-pink-300'
+                    : 'border-slate-800 bg-slate-900 text-slate-400 hover:text-white'
+                }`}
+              >
+                <span>🖼️ Image Output</span>
+              </button>
             </div>
           </div>
 
@@ -418,15 +440,25 @@ export const ScatterPlotView: React.FC<ScatterPlotViewProps> = ({
           </div>
 
           {showPareto && paretoModels.length > 0 && (
-            <div className="flex items-center gap-2">
-              {kneeModel && (
+            <div className="flex flex-wrap items-center gap-2">
+              {kneeWinners.budgetKnee && (
                 <div 
-                  onClick={() => onSelectModel(kneeModel)}
+                  onClick={() => onSelectModel(kneeWinners.budgetKnee!)}
                   className="flex items-center gap-1.5 rounded-lg border border-amber-500/50 bg-amber-500/15 px-3 py-1 text-xs font-bold text-amber-300 shadow-lg shadow-amber-500/10 cursor-pointer hover:bg-amber-500/25 transition-all"
-                  title="Mathematical Knee Point (Elbow of Maximum ROI)"
+                  title="Best Budget Value Knee (Maximum ROI at lower cost)"
                 >
-                  <Target className="h-3.5 w-3.5 text-amber-400 animate-pulse" />
-                  <span>★ Max ROI Knee: {kneeModel.shortName}</span>
+                  <Zap className="h-3.5 w-3.5 text-amber-400 animate-pulse" />
+                  <span>⚡ Best Budget Knee: {kneeWinners.budgetKnee.shortName}</span>
+                </div>
+              )}
+              {kneeWinners.sotaKnee && (
+                <div 
+                  onClick={() => onSelectModel(kneeWinners.sotaKnee!)}
+                  className="flex items-center gap-1.5 rounded-lg border border-cyan-500/50 bg-cyan-500/15 px-3 py-1 text-xs font-bold text-cyan-300 shadow-lg shadow-cyan-500/10 cursor-pointer hover:bg-cyan-500/25 transition-all"
+                  title="Best SOTA Value Knee (Maximum ROI at high performance)"
+                >
+                  <Trophy className="h-3.5 w-3.5 text-cyan-400 animate-pulse" />
+                  <span>🏆 Best SOTA Knee: {kneeWinners.sotaKnee.shortName}</span>
                 </div>
               )}
               <div className="flex items-center gap-1.5 rounded-lg border border-emerald-500/40 bg-emerald-500/10 px-3 py-1 text-xs font-semibold text-emerald-300">
@@ -450,6 +482,7 @@ export const ScatterPlotView: React.FC<ScatterPlotViewProps> = ({
                   setFilterFreeOnly(false);
                   setFilterReasoningOnly(false);
                   setFilterMultimodalOnly(false);
+                  setFilterImageOutputOnly(false);
                 }}
                 className="rounded-lg bg-cyan-600 px-4 py-2 text-xs font-semibold text-white hover:bg-cyan-500"
               >
@@ -519,9 +552,14 @@ export const ScatterPlotView: React.FC<ScatterPlotViewProps> = ({
                           </div>
 
                           <div className="flex flex-wrap items-center gap-1.5 pt-1 border-t border-slate-800">
-                            {data.isKnee && (
+                            {data.isBudgetKnee && (
                               <span className="rounded bg-amber-500/20 text-amber-300 border border-amber-500/50 px-1.5 py-0.5 text-[10px] font-bold flex items-center gap-1">
-                                <Target className="h-3 w-3 text-amber-400" /> ★ Pareto Knee (Elbow)
+                                <Zap className="h-3 w-3 text-amber-400" /> ⚡ Best Budget Knee
+                              </span>
+                            )}
+                            {data.isSotaKnee && (
+                              <span className="rounded bg-cyan-500/20 text-cyan-300 border border-cyan-500/50 px-1.5 py-0.5 text-[10px] font-bold flex items-center gap-1">
+                                <Trophy className="h-3 w-3 text-cyan-400" /> 🏆 Best SOTA Knee
                               </span>
                             )}
                             {data.isPareto && !data.isKnee && (
@@ -542,6 +580,11 @@ export const ScatterPlotView: React.FC<ScatterPlotViewProps> = ({
                             {m.isMultimodal && (
                               <span className="rounded bg-blue-500/20 text-blue-300 border border-blue-500/40 px-1.5 py-0.5 text-[10px] font-bold">
                                 Vision
+                              </span>
+                            )}
+                            {m.isImageOutput && (
+                              <span className="rounded bg-pink-500/20 text-pink-300 border border-pink-500/40 px-1.5 py-0.5 text-[10px] font-bold">
+                                🖼️ Image Gen
                               </span>
                             )}
                           </div>
@@ -597,7 +640,6 @@ export const ScatterPlotView: React.FC<ScatterPlotViewProps> = ({
                   {chartData.map((entry, index) => {
                     const isSelected = entry.isSelected;
                     const isPareto = entry.isPareto;
-                    const isKnee = entry.isKnee;
 
                     let stroke = entry.color;
                     let strokeWidth = 1.5;
@@ -607,8 +649,12 @@ export const ScatterPlotView: React.FC<ScatterPlotViewProps> = ({
                       stroke = '#ffffff';
                       strokeWidth = 3.5;
                       opacity = 1;
-                    } else if (isKnee && showPareto) {
-                      stroke = '#f59e0b';
+                    } else if (entry.isBudgetKnee && showPareto) {
+                      stroke = '#f59e0b'; // Amber for Budget Knee
+                      strokeWidth = 3.5;
+                      opacity = 1;
+                    } else if (entry.isSotaKnee && showPareto) {
+                      stroke = '#06b6d4'; // Cyan for SOTA Knee
                       strokeWidth = 3.5;
                       opacity = 1;
                     } else if (isPareto && showPareto) {

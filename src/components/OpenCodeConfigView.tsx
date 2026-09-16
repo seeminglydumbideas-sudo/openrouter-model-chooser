@@ -42,13 +42,13 @@ export const OpenCodeConfigView: React.FC<OpenCodeConfigViewProps> = ({
 
   // Calculate Image Generation Marginal Gain Rule Winners (Budget Knee vs SOTA Knee)
   const imageKneeWinners = useMemo(() => {
-    let dataset = models.filter(m => m.isImageOutput && !m.id.includes('/auto'));
+    let dataset = models.filter(m => m.isImageOutput && !m.id.includes('/auto') && (m.t2iLeaderboardElo || 0) >= 1150);
     if (dataset.length === 0) return { budgetKnee: null, sotaKnee: null };
     const pareto = calculateParetoFrontier(dataset, 'blendedCostPerM', 't2iLeaderboardElo');
     return findMarginalGainWinners(pareto, 'blendedCostPerM', 't2iLeaderboardElo', true, false);
   }, [models]);
 
-  const budgetImageModel = imageKneeWinners.budgetKnee || models.find(m => m.id === 'google/gemini-3.1-flash-lite-image') || models.find(m => m.isImageOutput && !m.id.includes('/auto'));
+  const budgetImageModel = imageKneeWinners.budgetKnee || models.find(m => m.id === 'google/gemini-3.1-flash-lite-image') || models.find(m => m.id === 'google/gemini-2.5-flash-image') || models.find(m => m.isImageOutput && !m.id.includes('/auto'));
   const sotaImageModel = imageKneeWinners.sotaKnee || models.find(m => m.id === 'google/gemini-3.1-flash-image') || budgetImageModel;
 
   const cleanId = (id?: string) => id ? id.replace(':batch', '').replace(/^openrouter\//, '') : '';
@@ -239,10 +239,12 @@ const ImageGenerationPlugin = async ({ directory }) => {
 export const ImageGeneration = ImageGenerationPlugin
 export default ImageGenerationPlugin`, []);
 
+  const chatDriverModelId = codingKnee ? `openrouter/${cleanId(codingKnee.id)}` : "openrouter/google/gemini-2.5-flash";
+
   // 3. Sub-agent Markdown Specs
   const budgetMarkdownText = useMemo(() => `---
 description: Fast & cost-effective image generation sub-agent using Best Budget Knee model
-model: openrouter/${budgetModelId}
+model: ${chatDriverModelId}
 tools:
   image_generate: true
 ---
@@ -252,11 +254,11 @@ Your goal is to generate fast, high-quality images using the Best Budget Knee mo
 
 When asked to generate or edit an image:
 1. Construct a clear, descriptive visual prompt.
-2. Call your \`image_generate\` tool with \`image_model: "${budgetModelId}"\` and specify the \`output_path\` filename (e.g. \`output.png\`).`, [budgetModelId]);
+2. Call your \`image_generate\` tool with \`image_model: "${budgetModelId}"\` and specify the \`output_path\` filename (e.g. \`output.png\`).`, [budgetModelId, chatDriverModelId]);
 
   const sotaMarkdownText = useMemo(() => `---
 description: High-fidelity SOTA image generation sub-agent using Best SOTA Knee model
-model: openrouter/${sotaModelId}
+model: ${chatDriverModelId}
 tools:
   image_generate: true
 ---
@@ -266,7 +268,7 @@ Your goal is to generate photorealistic, high-fidelity images using the Best SOT
 
 When asked to generate high-fidelity images:
 1. Construct a hyper-detailed visual prompt specifying lighting, camera angle, texture, and style.
-2. Call your \`image_generate\` tool with \`image_model: "${sotaModelId}"\` and specify the \`output_path\` filename (e.g. \`output.png\`).`, [sotaModelId]);
+2. Call your \`image_generate\` tool with \`image_model: "${sotaModelId}"\` and specify the \`output_path\` filename (e.g. \`output.png\`).`, [sotaModelId, chatDriverModelId]);
 
   const downloadFile = (filename: string, content: string, type: string = 'text/plain') => {
     const element = document.createElement("a");

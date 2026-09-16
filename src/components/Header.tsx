@@ -1,9 +1,9 @@
 import React from 'react';
-import { Cpu, RefreshCw, Compass, Table, Terminal } from 'lucide-react';
+import { Cpu, RefreshCw, Compass, Table, Terminal, BookOpen } from 'lucide-react';
 
 interface HeaderProps {
-  activeTab: 'scatter' | 'opencode' | 'table';
-  setActiveTab: (tab: 'scatter' | 'opencode' | 'table') => void;
+  activeTab: 'scatter' | 'opencode' | 'table' | 'methodology';
+  setActiveTab: (tab: 'scatter' | 'opencode' | 'table' | 'methodology') => void;
   totalModels: number;
   filteredModelsCount: number;
   isLive: boolean;
@@ -101,6 +101,18 @@ export const Header: React.FC<HeaderProps> = ({
             >
               <Table className="h-4 w-4" />
               <span>Catalog Table</span>
+            </button>
+
+            <button
+              onClick={() => setActiveTab('methodology')}
+              className={`flex items-center gap-2 rounded-lg px-3.5 py-1.5 text-xs font-medium transition-all ${
+                activeTab === 'methodology'
+                  ? 'bg-gradient-to-r from-cyan-500 to-blue-600 text-white shadow-md shadow-cyan-500/20'
+                  : 'text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              <BookOpen className="h-4 w-4 text-violet-400" />
+              <span>Methodology</span>
             </button>
           </nav>
         </div>

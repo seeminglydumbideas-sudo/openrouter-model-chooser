@@ -5,6 +5,7 @@ import type { PresetConfig } from './components/PresetBar';
 import { ScatterPlotView } from './components/ScatterPlotView';
 import { ModelCatalogView } from './components/ModelCatalogView';
 import { OpenCodeConfigView } from './components/OpenCodeConfigView';
+import { MethodologyView } from './components/MethodologyView';
 import { ModelDetailModal } from './components/ModelDetailModal';
 import type { ProcessedModel, AxisMetricKey } from './types/openrouter';
 import { getInitialModels, fetchLiveModels } from './services/modelService';
@@ -14,12 +15,11 @@ export default function App() {
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [isLive, setIsLive] = useState<boolean>(false);
 
-  const [activeTab, setActiveTab] = useState<'scatter' | 'opencode' | 'table'>('scatter');
+  const [activeTab, setActiveTab] = useState<'scatter' | 'opencode' | 'table' | 'methodology'>('scatter');
   const [selectedModelDetail, setSelectedModelDetail] = useState<ProcessedModel | null>(null);
   
   const [activePresetId, setActivePresetId] = useState<string | null>('intelligence');
   
-  const [xAxisKey, setXAxisKey] = useState<AxisMetricKey>('blendedCostPerM');
   const [yAxisKey, setYAxisKey] = useState<AxisMetricKey>('intelligenceIndex');
   const [isXLog, setIsXLog] = useState<boolean>(true);
   const [isYLog, setIsYLog] = useState<boolean>(false);
@@ -54,15 +54,20 @@ export default function App() {
   }, [loadLiveModels]);
 
   const handleApplyPreset = (preset: PresetConfig) => {
+    // Every field is set explicitly (preset value, or its default) so a preset
+    // always produces the same view regardless of whatever was selected before.
     setActivePresetId(preset.id);
-    setXAxisKey(preset.xAxis);
     setYAxisKey(preset.yAxis);
-    if (preset.xLog !== undefined) setIsXLog(preset.xLog);
-    if (preset.yLog !== undefined) setIsYLog(preset.yLog);
-    if (preset.filterFreeOnly !== undefined) setFilterFreeOnly(preset.filterFreeOnly);
-    if (preset.filterReasoningOnly !== undefined) setFilterReasoningOnly(preset.filterReasoningOnly);
-    if (preset.filterImageOutputOnly !== undefined) setFilterImageOutputOnly(preset.filterImageOutputOnly);
-    
+    setIsXLog(preset.xLog ?? true);
+    setIsYLog(preset.yLog ?? false);
+    setShowPareto(true);
+    setSearchQuery('');
+    setSelectedProviders([]);
+    setFilterFreeOnly(preset.filterFreeOnly ?? false);
+    setFilterReasoningOnly(preset.filterReasoningOnly ?? false);
+    setFilterMultimodalOnly(false);
+    setFilterImageOutputOnly(preset.filterImageOutputOnly ?? false);
+
     if (activeTab !== 'scatter') setActiveTab('scatter');
   };
 
@@ -93,8 +98,6 @@ export default function App() {
             models={models}
             selectedModel={selectedModelDetail}
             onSelectModel={setSelectedModelDetail}
-            xAxisKey={xAxisKey}
-            setXAxisKey={(k) => { setXAxisKey(k); setActivePresetId(null); }}
             yAxisKey={yAxisKey}
             setYAxisKey={(k) => { setYAxisKey(k); setActivePresetId(null); }}
             isXLog={isXLog}
@@ -130,6 +133,10 @@ export default function App() {
             models={models}
             onSelectModelDetail={setSelectedModelDetail}
           />
+        )}
+
+        {activeTab === 'methodology' && (
+          <MethodologyView />
         )}
       </main>
 

@@ -7,21 +7,23 @@ import {
   ZAxis, 
   Tooltip, 
   ResponsiveContainer, 
-  Cell, 
-  CartesianGrid, 
-  Line 
+  Cell,
+  CartesianGrid,
+  Line,
+  matchByDataKey
 } from 'recharts';
 import type { ProcessedModel, AxisMetricKey } from '../types/openrouter';
 import { AXIS_OPTIONS } from '../types/openrouter';
-import { getMetricValue, calculateParetoFrontier, findMarginalGainWinners, getProviderColor } from '../services/modelService';
-import { Search, Layers, Info, Sparkles, Sliders, ExternalLink, Zap, Trophy } from 'lucide-react';
+import { getMetricValue, calculateParetoFrontier, findMarginalGainWinners, findValueRecoveryModel, getProviderColor } from '../services/modelService';
+import { Search, Layers, Info, Sparkles, Sliders, ExternalLink, Zap, Repeat } from 'lucide-react';
+
+// X-axis is fixed to Blended Cost — this is the only cost view the app supports.
+const X_AXIS_KEY: AxisMetricKey = 'blendedCostPerM';
 
 interface ScatterPlotViewProps {
   models: ProcessedModel[];
   selectedModel: ProcessedModel | null;
   onSelectModel: (model: ProcessedModel) => void;
-  xAxisKey: AxisMetricKey;
-  setXAxisKey: (key: AxisMetricKey) => void;
   yAxisKey: AxisMetricKey;
   setYAxisKey: (key: AxisMetricKey) => void;
   isXLog: boolean;
@@ -48,8 +50,6 @@ export const ScatterPlotView: React.FC<ScatterPlotViewProps> = ({
   models,
   selectedModel,
   onSelectModel,
-  xAxisKey,
-  setXAxisKey,
   yAxisKey,
   setYAxisKey,
   isXLog,
@@ -74,7 +74,7 @@ export const ScatterPlotView: React.FC<ScatterPlotViewProps> = ({
   const [sizeMetric, setSizeMetric] = useState<'context' | 'cost' | 'equal'>('context');
   const [excludeBatch, setExcludeBatch] = useState<boolean>(true);
 
-  const xAxisOption = AXIS_OPTIONS.find(a => a.key === xAxisKey) || AXIS_OPTIONS[0];
+  const xAxisOption = AXIS_OPTIONS.find(a => a.key === X_AXIS_KEY)!;
   const yAxisOption = AXIS_OPTIONS.find(a => a.key === yAxisKey) || AXIS_OPTIONS[1];
 
   // All unique providers from models list
@@ -112,7 +112,7 @@ export const ScatterPlotView: React.FC<ScatterPlotViewProps> = ({
       if (filterImageOutputOnly && !m.isImageOutput) return false;
 
       // Metric presence check
-      const xVal = getMetricValue(m, xAxisKey);
+      const xVal = getMetricValue(m, X_AXIS_KEY);
       const yVal = getMetricValue(m, yAxisKey);
       if (xVal === null || yVal === null || isNaN(xVal) || isNaN(yVal)) return false;
 
@@ -131,7 +131,6 @@ export const ScatterPlotView: React.FC<ScatterPlotViewProps> = ({
     filterReasoningOnly, 
     filterMultimodalOnly,
     filterImageOutputOnly,
-    xAxisKey, 
     yAxisKey, 
     isXLog, 
     isYLog
@@ -140,16 +139,23 @@ export const ScatterPlotView: React.FC<ScatterPlotViewProps> = ({
   // Pareto Frontier models
   const paretoModels = useMemo(() => {
     if (!showPareto) return [];
-    return calculateParetoFrontier(filteredModels, xAxisKey, yAxisKey);
-  }, [filteredModels, xAxisKey, yAxisKey, showPareto]);
+    return calculateParetoFrontier(filteredModels, X_AXIS_KEY, yAxisKey);
+  }, [filteredModels, yAxisKey, showPareto]);
 
   const paretoIds = useMemo(() => new Set(paretoModels.map(m => m.id)), [paretoModels]);
 
   // Knee Model calculation (Marginal Gain Rule Winners: Budget Knee & SOTA Knee)
   const kneeWinners = useMemo(() => {
     if (!showPareto || paretoModels.length < 2) return { budgetKnee: null, sotaKnee: null };
-    return findMarginalGainWinners(paretoModels, xAxisKey, yAxisKey, isXLog, isYLog);
-  }, [paretoModels, xAxisKey, yAxisKey, isXLog, isYLog, showPareto]);
+    return findMarginalGainWinners(paretoModels, X_AXIS_KEY, yAxisKey, isXLog, isYLog);
+  }, [paretoModels, yAxisKey, isXLog, isYLog, showPareto]);
+
+  // Value Recovery: the model right after the steepest "marginal value dips then
+  // rebounds" transition above the Budget Knee (see findValueRecoveryModel).
+  const valueRecoveryModel = useMemo(() => {
+    if (!showPareto) return null;
+    return findValueRecoveryModel(paretoModels, X_AXIS_KEY, yAxisKey, isXLog, isYLog, kneeWinners.budgetKnee);
+  }, [paretoModels, yAxisKey, isXLog, isYLog, kneeWinners.budgetKnee, showPareto]);
 
   // Secant baseline line points
   const secantLineData = useMemo(() => {
@@ -157,15 +163,15 @@ export const ScatterPlotView: React.FC<ScatterPlotViewProps> = ({
     const first = paretoModels[0];
     const last = paretoModels[paretoModels.length - 1];
     return [
-      { x: getMetricValue(first, xAxisKey)!, y: getMetricValue(first, yAxisKey)! },
-      { x: getMetricValue(last, xAxisKey)!, y: getMetricValue(last, yAxisKey)! }
+      { x: getMetricValue(first, X_AXIS_KEY)!, y: getMetricValue(first, yAxisKey)! },
+      { x: getMetricValue(last, X_AXIS_KEY)!, y: getMetricValue(last, yAxisKey)! }
     ];
-  }, [paretoModels, xAxisKey, yAxisKey, showPareto]);
+  }, [paretoModels, yAxisKey, showPareto]);
 
   // Transform data for Recharts
   const chartData = useMemo(() => {
     return filteredModels.map(m => {
-      const x = getMetricValue(m, xAxisKey)!;
+      const x = getMetricValue(m, X_AXIS_KEY)!;
       const y = getMetricValue(m, yAxisKey)!;
       
       let z = 100;
@@ -178,8 +184,7 @@ export const ScatterPlotView: React.FC<ScatterPlotViewProps> = ({
       const color = getProviderColor(m.provider);
       const isPareto = paretoIds.has(m.id);
       const isBudgetKnee = kneeWinners.budgetKnee?.id === m.id;
-      const isSotaKnee = kneeWinners.sotaKnee?.id === m.id;
-      const isKnee = isBudgetKnee || isSotaKnee;
+      const isValueRecovery = valueRecoveryModel?.id === m.id;
       const isSelected = selectedModel?.id === m.id;
 
       return {
@@ -190,20 +195,19 @@ export const ScatterPlotView: React.FC<ScatterPlotViewProps> = ({
         color: color.hex,
         isPareto,
         isBudgetKnee,
-        isSotaKnee,
-        isKnee,
+        isValueRecovery,
         isSelected
       };
     });
-  }, [filteredModels, xAxisKey, yAxisKey, sizeMetric, paretoIds, kneeWinners, selectedModel]);
+  }, [filteredModels, yAxisKey, sizeMetric, paretoIds, kneeWinners, valueRecoveryModel, selectedModel]);
 
   // Pareto line points sorted
   const paretoLineData = useMemo(() => {
     return paretoModels.map(m => ({
-      x: getMetricValue(m, xAxisKey)!,
+      x: getMetricValue(m, X_AXIS_KEY)!,
       y: getMetricValue(m, yAxisKey)!
     }));
-  }, [paretoModels, xAxisKey, yAxisKey]);
+  }, [paretoModels, yAxisKey]);
 
   const toggleProvider = (p: string) => {
     setSelectedProviders(prev => 
@@ -231,7 +235,7 @@ export const ScatterPlotView: React.FC<ScatterPlotViewProps> = ({
             </span>
           </div>
 
-          {/* X Axis Selector */}
+          {/* X Axis (fixed to Blended Cost) */}
           <div className="flex flex-col gap-1.5">
             <label className="text-xs font-semibold text-slate-300 flex items-center justify-between">
               <span>X-Axis (Horizontal)</span>
@@ -244,15 +248,9 @@ export const ScatterPlotView: React.FC<ScatterPlotViewProps> = ({
                 {isXLog ? 'Log Scale ON' : 'Linear Scale'}
               </button>
             </label>
-            <select
-              value={xAxisKey}
-              onChange={(e) => setXAxisKey(e.target.value as AxisMetricKey)}
-              className="w-full rounded-lg border border-slate-800 bg-slate-900 px-3 py-2 text-xs font-medium text-white shadow-inner focus:border-cyan-500 focus:outline-none"
-            >
-              {AXIS_OPTIONS.map(opt => (
-                <option key={opt.key} value={opt.key}>{opt.label}</option>
-              ))}
-            </select>
+            <div className="w-full rounded-lg border border-slate-800 bg-slate-900 px-3 py-2 text-xs font-medium text-white shadow-inner">
+              {xAxisOption.label}
+            </div>
             <span className="text-[11px] text-slate-400">{xAxisOption.description}</span>
           </div>
 
@@ -451,14 +449,14 @@ export const ScatterPlotView: React.FC<ScatterPlotViewProps> = ({
                   <span>⚡ Best Budget Knee: {kneeWinners.budgetKnee.shortName}</span>
                 </div>
               )}
-              {kneeWinners.sotaKnee && (
-                <div 
-                  onClick={() => onSelectModel(kneeWinners.sotaKnee!)}
-                  className="flex items-center gap-1.5 rounded-lg border border-cyan-500/50 bg-cyan-500/15 px-3 py-1 text-xs font-bold text-cyan-300 shadow-lg shadow-cyan-500/10 cursor-pointer hover:bg-cyan-500/25 transition-all"
-                  title="Best SOTA Value Knee (Maximum ROI at high performance)"
+              {valueRecoveryModel && (
+                <div
+                  onClick={() => onSelectModel(valueRecoveryModel)}
+                  className="flex items-center gap-1.5 rounded-lg border border-violet-500/50 bg-violet-500/15 px-3 py-1 text-xs font-bold text-violet-300 shadow-lg shadow-violet-500/10 cursor-pointer hover:bg-violet-500/25 transition-all"
+                  title="Value Recovery: marginal value dipped above the Budget Knee, then resumed a good rate here"
                 >
-                  <Trophy className="h-3.5 w-3.5 text-cyan-400 animate-pulse" />
-                  <span>🏆 Best SOTA Knee: {kneeWinners.sotaKnee.shortName}</span>
+                  <Repeat className="h-3.5 w-3.5 text-violet-400 animate-pulse" />
+                  <span>🔁 Value Recovery: {valueRecoveryModel.shortName}</span>
                 </div>
               )}
               <div className="flex items-center gap-1.5 rounded-lg border border-emerald-500/40 bg-emerald-500/10 px-3 py-1 text-xs font-semibold text-emerald-300">
@@ -557,12 +555,12 @@ export const ScatterPlotView: React.FC<ScatterPlotViewProps> = ({
                                 <Zap className="h-3 w-3 text-amber-400" /> ⚡ Best Budget Knee
                               </span>
                             )}
-                            {data.isSotaKnee && (
-                              <span className="rounded bg-cyan-500/20 text-cyan-300 border border-cyan-500/50 px-1.5 py-0.5 text-[10px] font-bold flex items-center gap-1">
-                                <Trophy className="h-3 w-3 text-cyan-400" /> 🏆 Best SOTA Knee
+                            {data.isValueRecovery && (
+                              <span className="rounded bg-violet-500/20 text-violet-300 border border-violet-500/50 px-1.5 py-0.5 text-[10px] font-bold flex items-center gap-1">
+                                <Repeat className="h-3 w-3 text-violet-400" /> 🔁 Value Recovery
                               </span>
                             )}
-                            {data.isPareto && !data.isKnee && (
+                            {data.isPareto && !data.isBudgetKnee && !data.isValueRecovery && (
                               <span className="rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 px-1.5 py-0.5 text-[10px] font-bold flex items-center gap-1">
                                 <Sparkles className="h-3 w-3" /> Pareto Efficient
                               </span>
@@ -630,6 +628,7 @@ export const ScatterPlotView: React.FC<ScatterPlotViewProps> = ({
                 {/* Scatter Dots */}
                 <Scatter
                   data={chartData}
+                  animationMatchBy={matchByDataKey('model.id')}
                   onClick={(entry: any) => {
                     if (entry && entry.model) {
                       onSelectModel(entry.model);
@@ -637,7 +636,7 @@ export const ScatterPlotView: React.FC<ScatterPlotViewProps> = ({
                   }}
                   className="cursor-pointer"
                 >
-                  {chartData.map((entry, index) => {
+                  {chartData.map((entry) => {
                     const isSelected = entry.isSelected;
                     const isPareto = entry.isPareto;
 
@@ -653,8 +652,8 @@ export const ScatterPlotView: React.FC<ScatterPlotViewProps> = ({
                       stroke = '#f59e0b'; // Amber for Budget Knee
                       strokeWidth = 3.5;
                       opacity = 1;
-                    } else if (entry.isSotaKnee && showPareto) {
-                      stroke = '#06b6d4'; // Cyan for SOTA Knee
+                    } else if (entry.isValueRecovery && showPareto) {
+                      stroke = '#8b5cf6'; // Violet for Value Recovery
                       strokeWidth = 3.5;
                       opacity = 1;
                     } else if (isPareto && showPareto) {
@@ -665,7 +664,7 @@ export const ScatterPlotView: React.FC<ScatterPlotViewProps> = ({
 
                     return (
                       <Cell
-                        key={`cell-${index}`}
+                        key={entry.model.id}
                         fill={entry.color}
                         stroke={stroke}
                         strokeWidth={strokeWidth}

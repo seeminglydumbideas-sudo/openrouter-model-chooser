@@ -7,7 +7,6 @@ export interface PresetConfig {
   name: string;
   description: string;
   icon: React.ReactNode;
-  xAxis: AxisMetricKey;
   yAxis: AxisMetricKey;
   xLog?: boolean;
   yLog?: boolean;
@@ -27,7 +26,6 @@ export const PRESETS: PresetConfig[] = [
     name: 'Coding Champions',
     description: 'Price vs Software Engineering capability score',
     icon: <Code2 className="h-4 w-4 text-emerald-400" />,
-    xAxis: 'blendedCostPerM',
     yAxis: 'codingIndex',
     xLog: true,
     yLog: false,
@@ -37,7 +35,6 @@ export const PRESETS: PresetConfig[] = [
     name: 'Agentic Leaders',
     description: 'Price vs Tool-Use & Multi-step agent workflow score',
     icon: <Bot className="h-4 w-4 text-purple-400" />,
-    xAxis: 'blendedCostPerM',
     yAxis: 'agenticIndex',
     xLog: true,
     yLog: false,
@@ -47,7 +44,6 @@ export const PRESETS: PresetConfig[] = [
     name: 'Frontier Intelligence',
     description: 'Price vs Overall Intelligence rating',
     icon: <Brain className="h-4 w-4 text-cyan-400" />,
-    xAxis: 'blendedCostPerM',
     yAxis: 'intelligenceIndex',
     xLog: true,
     yLog: false,
@@ -57,7 +53,6 @@ export const PRESETS: PresetConfig[] = [
     name: '🖼️ HuggingFace T2I ELO',
     description: 'Price vs Artificial Analysis / HuggingFace Text-to-Image Leaderboard ELO',
     icon: <Palette className="h-4 w-4 text-pink-400" />,
-    xAxis: 'blendedCostPerM',
     yAxis: 't2iLeaderboardElo',
     xLog: true,
     yLog: false,
@@ -68,7 +63,6 @@ export const PRESETS: PresetConfig[] = [
     name: 'Best Free Models',
     description: 'Capability distribution of 100% free OpenRouter models',
     icon: <Sparkles className="h-4 w-4 text-amber-400" />,
-    xAxis: 'blendedCostPerM',
     yAxis: 'intelligenceIndex',
     xLog: false,
     yLog: false,
@@ -77,19 +71,17 @@ export const PRESETS: PresetConfig[] = [
   {
     id: 'context',
     name: 'Long Context Masters',
-    description: 'Context Window size vs Intelligence Index',
+    description: 'Price vs Context Window size',
     icon: <Maximize2 className="h-4 w-4 text-blue-400" />,
-    xAxis: 'contextLength',
-    yAxis: 'intelligenceIndex',
+    yAxis: 'contextLength',
     xLog: true,
-    yLog: false,
+    yLog: true,
   },
   {
     id: 'arena',
     name: 'Design Arena ELO',
     description: 'Price vs Design Arena benchmark ELO rating',
     icon: <Trophy className="h-4 w-4 text-rose-400" />,
-    xAxis: 'blendedCostPerM',
     yAxis: 'arenaElo',
     xLog: true,
     yLog: false,

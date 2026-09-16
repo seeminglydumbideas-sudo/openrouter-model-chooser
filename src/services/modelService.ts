@@ -481,3 +481,94 @@ export function findMarginalGainWinners(
     sotaKnee: finalSota
   };
 }
+
+// Find the Value Recovery model: above the Budget Knee, a Pareto front built
+// from multiple independently-priced model families is rarely a smooth curve —
+// one family's tier often buys little (a "dip" in marginal value per log-dollar)
+// before the next family's tier resumes a good rate. This flags the model right
+// after the steepest such dip-then-rebound, i.e. the first point past the dip
+// where you're clearly buying real capability again, without singling out any
+// fixed price ceiling.
+//
+// A rebound sitting at the very top of the observed price range is inherently
+// less trustworthy than one in the interior: it only has support/corroboration
+// on one side (nothing pricier exists to confirm the trend), the classic
+// boundary-bias problem in local regression/kernel estimation. Rather than a
+// hard rule that excludes the priciest model outright (fragile — it doesn't
+// generalize across metrics, families or thin frontiers like Text-to-Image),
+// each candidate's rate is scaled by how close it sits to the *center* of the
+// frontier's own price range: 0 at either extreme, 1 at the exact center, with
+// a floor so it's a handicap, never a disqualification. See "How the Chart
+// Recommends Models" below the catalog table for the full derivation.
+const VALUE_RECOVERY_RATIO_THRESHOLD = 1.3;
+const VALUE_RECOVERY_BOUNDARY_WEIGHT_FLOOR = 0.15;
+
+export function findValueRecoveryModel(
+  paretoModels: ProcessedModel[],
+  xKey: AxisMetricKey,
+  yKey: AxisMetricKey,
+  isXLog: boolean,
+  isYLog: boolean,
+  budgetKnee: ProcessedModel | null
+): ProcessedModel | null {
+  if (!budgetKnee) return null;
+
+  const budgetIndex = paretoModels.findIndex(m => m.id === budgetKnee.id);
+  if (budgetIndex === -1) return null;
+
+  // Only the tier at-or-above the Budget Knee's price is relevant.
+  const upperTier = paretoModels.slice(budgetIndex);
+  if (upperTier.length < 3) return null;
+
+  const tx = (m: ProcessedModel) => {
+    const raw = getMetricValue(m, xKey)!;
+    return isXLog ? Math.log10(raw + 0.001) : raw;
+  };
+  const ty = (m: ProcessedModel) => {
+    const raw = getMetricValue(m, yKey)!;
+    return isYLog ? Math.log10(raw + 0.001) : raw;
+  };
+
+  // Marginal rate of return (Y gained per unit of X) for each consecutive step.
+  const xPositions = upperTier.map(tx);
+  const slopes: number[] = [];
+  for (let i = 0; i < upperTier.length - 1; i++) {
+    const dx = xPositions[i + 1] - xPositions[i];
+    const dy = ty(upperTier[i + 1]) - ty(upperTier[i]);
+    slopes.push(dx !== 0 ? dy / dx : 0);
+  }
+
+  const rangeStart = xPositions[0];
+  const rangeEnd = xPositions[xPositions.length - 1];
+  const halfRange = (rangeEnd - rangeStart) / 2;
+
+  // A step only qualifies as a genuine "rebound" if its rate is meaningfully
+  // better than the step immediately before it (a local minimum in the rate
+  // sequence). Among qualifying rebounds, rank by absolute rate discounted by
+  // boundary distance, not by raw rate or ratio alone — see comment above.
+  let bestScore = -Infinity;
+  let recoveryIndex = -1;
+
+  for (let i = 1; i < slopes.length; i++) {
+    const rateIntoDip = slopes[i - 1];
+    const rateOutOfDip = slopes[i];
+    if (rateIntoDip <= 0) continue;
+
+    const ratio = rateOutOfDip / rateIntoDip;
+    if (ratio <= VALUE_RECOVERY_RATIO_THRESHOLD) continue;
+
+    const candidateIndex = i + 1;
+    const boundaryDistance = halfRange > 0
+      ? Math.min(xPositions[candidateIndex] - rangeStart, rangeEnd - xPositions[candidateIndex]) / halfRange
+      : 0;
+    const weight = VALUE_RECOVERY_BOUNDARY_WEIGHT_FLOOR + (1 - VALUE_RECOVERY_BOUNDARY_WEIGHT_FLOOR) * boundaryDistance;
+    const score = rateOutOfDip * weight;
+
+    if (score > bestScore) {
+      bestScore = score;
+      recoveryIndex = candidateIndex;
+    }
+  }
+
+  return recoveryIndex >= 0 ? upperTier[recoveryIndex] : null;
+}

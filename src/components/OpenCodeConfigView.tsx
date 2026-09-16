@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
-import type { ProcessedModel } from '../types/openrouter';
-import { calculateParetoFrontier, findKneePointModel, findMarginalGainWinners } from '../services/modelService';
+import type { ProcessedModel, AxisMetricKey } from '../types/openrouter';
+import { calculateParetoFrontier, findMarginalGainWinners, findValueRecoveryModel } from '../services/modelService';
 import { 
   Copy, Download, Check,
   Terminal, Zap, Trophy, Image as ImageIcon, Plug 
@@ -12,80 +12,161 @@ interface OpenCodeConfigViewProps {
 }
 
 export const OpenCodeConfigView: React.FC<OpenCodeConfigViewProps> = ({
-  models
+  models,
+  onSelectModelDetail
 }) => {
   const [copiedConfig, setCopiedConfig] = useState<boolean>(false);
   const [copiedPlugin, setCopiedPlugin] = useState<boolean>(false);
   const [copiedBudgetMd, setCopiedBudgetMd] = useState<boolean>(false);
   const [copiedSotaMd, setCopiedSotaMd] = useState<boolean>(false);
 
-  // Compute Knee models for primary OpenCode roles (Coding/build, Plan/intel, General/fast)
-  const codingKnee = useMemo(() => {
-    let dataset = models.filter(m => !m.isFree && !m.id.endsWith(':batch'));
-    const pareto = calculateParetoFrontier(dataset, 'blendedCostPerM', 'codingIndex');
-    return findKneePointModel(pareto, 'blendedCostPerM', 'codingIndex', true, false) || pareto[0] || models[0];
+  // The build/plan/general role model picks used to come from findKneePointModel
+  // (Budget Knee only) and an ad-hoc "cheapest with best coding" rule — both
+  // superseded by the Budget Knee + Value Recovery formulas used on the scatter
+  // plot. Rather than keep shipping picks made with the old, deprecated logic,
+  // these roles report "N/A" until they're wired up to the current formulas.
+
+  // Budget Knee, Value Recovery and SOTA for every task axis, computed with the
+  // same current formulas the scatter plot uses (Pareto frontier +
+  // findMarginalGainWinners + findValueRecoveryModel) — a single source of truth
+  // instead of separate, inconsistent picks per axis. Surfaced both as the image
+  // sub-agent model picks below and as an informational comment on the config.
+  // SOTA is the single highest-scoring model on the Pareto frontier itself — the
+  // frontier is sorted by cost ascending and, being Pareto-efficient, score is
+  // monotonically non-decreasing along it, so the last entry is always the best
+  // score in the whole dataset, at any price.
+  interface AxisSpotlight {
+    label: string;
+    budget: ProcessedModel | null;
+    value: ProcessedModel | null;
+    sota: ProcessedModel | null;
+  }
+
+  const axisSpotlights = useMemo<AxisSpotlight[]>(() => {
+    const spotlightFor = (label: string, dataset: ProcessedModel[], yKey: AxisMetricKey): AxisSpotlight => {
+      const pareto = calculateParetoFrontier(dataset, 'blendedCostPerM', yKey);
+      const { budgetKnee } = findMarginalGainWinners(pareto, 'blendedCostPerM', yKey, true, false);
+      const value = findValueRecoveryModel(pareto, 'blendedCostPerM', yKey, true, false, budgetKnee);
+      const sota = pareto.length > 0 ? pareto[pareto.length - 1] : null;
+      return { label, budget: budgetKnee, value, sota };
+    };
+
+    // Matches the 2D Matrix's default dataset exactly for every preset: batch
+    // endpoints excluded, and cost > 0 since every preset runs with the X-axis
+    // (Blended Cost) log-scaled, which excludes free/zero-cost models. No extra
+    // eligibility filters (ELO floors, id exclusions) beyond that — the scatter
+    // plot is the reference, and it has none either.
+    const eligibleModels = models.filter(m => !m.id.endsWith(':batch') && m.blendedCostPerM > 0);
+    return [
+      spotlightFor('Coding', eligibleModels.filter(m => m.codingIndex !== null), 'codingIndex'),
+      spotlightFor('Agentic', eligibleModels.filter(m => m.agenticIndex !== null), 'agenticIndex'),
+      spotlightFor('Intelligence', eligibleModels.filter(m => m.intelligenceIndex !== null), 'intelligenceIndex'),
+      spotlightFor(
+        'Text-to-Image',
+        eligibleModels.filter(m => m.isImageOutput && m.t2iLeaderboardElo !== null),
+        't2iLeaderboardElo'
+      ),
+    ];
   }, [models]);
 
-  const intelKnee = useMemo(() => {
-    let dataset = models.filter(m => !m.isFree && !m.id.endsWith(':batch'));
-    const pareto = calculateParetoFrontier(dataset, 'blendedCostPerM', 'intelligenceIndex');
-    return findKneePointModel(pareto, 'blendedCostPerM', 'intelligenceIndex', true, false) || pareto[0] || models[0];
-  }, [models]);
-
-  // Fast budget model (sub 10 cent model with best coding)
-  const fastBudgetModel = useMemo(() => {
-    const budgetModels = models.filter(m => m.blendedCostPerM <= 0.10 && m.codingIndex !== null);
-    if (budgetModels.length === 0) return models.find(m => m.isFree) || models[0];
-    budgetModels.sort((a, b) => (b.codingIndex || 0) - (a.codingIndex || 0));
-    return budgetModels[0];
-  }, [models]);
-
-  // Calculate Image Generation Marginal Gain Rule Winners (Budget Knee vs SOTA Knee)
-  const imageKneeWinners = useMemo(() => {
-    let dataset = models.filter(m => m.isImageOutput && !m.id.includes('/auto') && (m.t2iLeaderboardElo || 0) >= 1150);
-    if (dataset.length === 0) return { budgetKnee: null, sotaKnee: null };
-    const pareto = calculateParetoFrontier(dataset, 'blendedCostPerM', 't2iLeaderboardElo');
-    return findMarginalGainWinners(pareto, 'blendedCostPerM', 't2iLeaderboardElo', true, false);
-  }, [models]);
-
-  const budgetImageModel = imageKneeWinners.budgetKnee || models.find(m => m.id === 'google/gemini-3.1-flash-lite-image') || models.find(m => m.id === 'google/gemini-2.5-flash-image') || models.find(m => m.isImageOutput && !m.id.includes('/auto'));
-  const sotaImageModel = imageKneeWinners.sotaKnee || models.find(m => m.id === 'google/gemini-3.1-flash-image') || budgetImageModel;
+  const imageSpotlight = axisSpotlights[3];
+  const budgetImageModel = imageSpotlight.budget || models.find(m => m.id === 'google/gemini-3.1-flash-lite-image') || models.find(m => m.id === 'google/gemini-2.5-flash-image') || models.find(m => m.isImageOutput && !m.id.includes('/auto'));
+  const sotaImageModel = imageSpotlight.sota || models.find(m => m.id === 'google/gemini-3.1-flash-image') || budgetImageModel;
 
   const cleanId = (id?: string) => id ? id.replace(':batch', '').replace(/^openrouter\//, '') : '';
 
   const budgetModelId = budgetImageModel ? cleanId(budgetImageModel.id) : 'google/gemini-3.1-flash-lite-image';
   const sotaModelId = sotaImageModel ? cleanId(sotaImageModel.id) : 'google/gemini-3.1-flash-image';
 
-  // 1. Full OpenCode opencode.json configuration with primary role mappings (build, plan, general)
-  const openCodeConfigJson = useMemo(() => {
-    const config: Record<string, any> = {
-      "$schema": "https://opencode.ai/config.v1.json",
-      "model": codingKnee ? `openrouter/${cleanId(codingKnee.id)}` : "openrouter/z-ai/glm-5.3-flash",
-      "agent": {
-        "build": {
-          "model": codingKnee ? `openrouter/${cleanId(codingKnee.id)}` : "openrouter/z-ai/glm-5.3-flash",
-          "tools": {
-            "image_generate": false
-          }
-        },
-        "plan": {
-          "model": intelKnee ? `openrouter/${cleanId(intelKnee.id)}` : "openrouter/z-ai/glm-5.3-flash",
-          "tools": {
-            "image_generate": false
-          }
-        },
-        "general": {
-          "model": fastBudgetModel ? `openrouter/${cleanId(fastBudgetModel.id)}` : "openrouter/deepseek/deepseek-v4-flash-0731",
-          "tools": {
-            "image_generate": false
-          }
-        }
-      }
-    };
-    return config;
-  }, [intelKnee, codingKnee, fastBudgetModel]);
+  // OpenRouter bills image generation per output token (raw.pricing.image_output),
+  // not per image — there's no token-count-per-image constant to convert that into
+  // an actual "$/image" figure, so we report the real billing unit instead of
+  // guessing a per-image number.
+  const formatImageCost = (m: ProcessedModel | undefined): string => {
+    const raw = m?.raw.pricing.image_output;
+    if (!raw) return 'pricing not listed';
+    const perMillion = parseFloat(raw) * 1_000_000;
+    return perMillion === 0 ? 'free' : `$${perMillion.toFixed(2)}/1M output tokens`;
+  };
 
-  const configJsonString = useMemo(() => JSON.stringify(openCodeConfigJson, null, 2), [openCodeConfigJson]);
+  const budgetImageCost = formatImageCost(budgetImageModel);
+  const sotaImageCost = formatImageCost(sotaImageModel);
+
+  const configHeaderComment = useMemo(() => {
+    const generatedAt = new Date().toISOString();
+    const labelWidth = Math.max(...axisSpotlights.map(s => s.label.length));
+    const tagWidth = Math.max('Best Budget'.length, 'Value'.length, 'SOTA'.length);
+
+    const lines = axisSpotlights.flatMap(({ label, budget, value, sota }) => ([
+      ['Best Budget', budget],
+      ['Value', value],
+      ['SOTA', sota],
+    ] as const).map(
+      ([tag, model]) => `// ${label.padEnd(labelWidth)} (${tag.padEnd(tagWidth)}): ${model ? model.shortName : 'N/A'}`
+    ));
+
+    return [`// Generated ${generatedAt}`, ...lines].join('\n');
+  }, [axisSpotlights]);
+
+  // 1. Full OpenCode opencode.jsonc role mappings (build, plan, general).
+  //
+  // Role -> axis/pick mapping, per OpenCode's own docs (https://opencode.ai/docs/agents/,
+  // https://opencode.ai/docs/config/):
+  //   - build:   Coding (Value)          — Build is the primary agent that actually writes
+  //              and executes code (full file/bash access); the docs' own example asks for
+  //              "a more capable model for implementation," so it gets the step-up pick
+  //              rather than the cheapest one.
+  //   - plan:    Intelligence (Best Budget) — Plan is execution-restricted (edits/bash
+  //              default to "ask"); it's reasoning/analysis, not doing. The docs' own
+  //              example explicitly asks for "a faster model for planning."
+  //   - general: Agentic (Best Budget)   — The General subagent ("researching complex
+  //              questions and executing multi-step tasks," full tool access) is what the
+  //              Agentic Index actually measures, and it can fire many times per session,
+  //              so cost matters most here.
+  //   - top-level model mirrors build's pick, since Build is the default primary agent
+  //     any call without an override falls back to.
+  //   - small_model: OpenCode docs say this wants "a cheaper model" for lightweight
+  //     tasks like title generation — not coding- or agentic-specific work, so it
+  //     reuses Intelligence (Best Budget), the same cheap/general-capability pick
+  //     as plan, rather than inventing a fifth axis for a trivial task.
+  const findAxis = (label: string) => axisSpotlights.find(s => s.label === label)!;
+  const buildModel = findAxis('Coding').value;          // Coding (Value)
+  const planModel = findAxis('Intelligence').budget;    // Intelligence (Best Budget)
+  const generalModel = findAxis('Agentic').budget;      // Agentic (Best Budget)
+  const smallModel = findAxis('Intelligence').budget;   // Intelligence (Best Budget)
+
+  const modelRef = (m: ProcessedModel | null): string => m ? `openrouter/${cleanId(m.id)}` : 'N/A';
+  const jsonStr = (s: string) => JSON.stringify(s);
+
+  // This file is JSONC (JSON + `//` line comments), not strict JSON — see the note
+  // in the panel below. Built as a template rather than JSON.stringify so each
+  // model field can carry its own "why this pick" comment inline.
+  const configJsonString = useMemo(() => `${configHeaderComment}
+{
+  "$schema": "https://opencode.ai/config.v1.json",
+  "model": ${jsonStr(modelRef(buildModel))}, // mirrors build: Coding (Value)
+  "small_model": ${jsonStr(modelRef(smallModel))}, // Intelligence (Best Budget): lightweight tasks (title generation, etc.)
+  "agent": {
+    "build": {
+      "model": ${jsonStr(modelRef(buildModel))}, // Coding (Value): more capable model for implementation
+      "tools": {
+        "image_generate": false
+      }
+    },
+    "plan": {
+      "model": ${jsonStr(modelRef(planModel))}, // Intelligence (Best Budget): faster model for planning
+      "tools": {
+        "image_generate": false
+      }
+    },
+    "general": {
+      "model": ${jsonStr(modelRef(generalModel))}, // Agentic (Best Budget): cost-conscious, high-frequency subagent
+      "tools": {
+        "image_generate": false
+      }
+    }
+  }
+}`, [configHeaderComment, buildModel, planModel, generalModel, smallModel]);
 
   // 2. OpenCode Plugin JS Code (image-generation.js from ~/.config/opencode/plugin/image-generation.js)
   const pluginJsText = useMemo(() => `// Adds an \`image_generate\` tool that calls OpenRouter's server-side
@@ -239,7 +320,9 @@ const ImageGenerationPlugin = async ({ directory }) => {
 export const ImageGeneration = ImageGenerationPlugin
 export default ImageGenerationPlugin`, []);
 
-  const chatDriverModelId = codingKnee ? `openrouter/${cleanId(codingKnee.id)}` : "openrouter/google/gemini-2.5-flash";
+  // Tool-calling-capable "driver" model for the sub-agent frontmatter — previously
+  // reused the deprecated codingKnee pick; reports "N/A" until re-wired.
+  const chatDriverModelId = "N/A";
 
   // 3. Sub-agent Markdown Specs
   const budgetMarkdownText = useMemo(() => `---
@@ -250,11 +333,11 @@ tools:
 ---
 
 You are OpenCode's specialized Budget Image Generation sub-agent.
-Your goal is to generate fast, high-quality images using the Best Budget Knee model (\`${budgetModelId}\` for ~$0.02/image).
+Your goal is to generate fast, high-quality images using the Best Budget Knee model (\`${budgetModelId}\`, ${budgetImageCost}).
 
 When asked to generate or edit an image:
 1. Construct a clear, descriptive visual prompt.
-2. Call your \`image_generate\` tool with \`image_model: "${budgetModelId}"\` and specify the \`output_path\` filename (e.g. \`output.png\`).`, [budgetModelId, chatDriverModelId]);
+2. Call your \`image_generate\` tool with \`image_model: "${budgetModelId}"\` and specify the \`output_path\` filename (e.g. \`output.png\`).`, [budgetModelId, budgetImageCost, chatDriverModelId]);
 
   const sotaMarkdownText = useMemo(() => `---
 description: High-fidelity SOTA image generation sub-agent using Best SOTA Knee model
@@ -264,11 +347,11 @@ tools:
 ---
 
 You are OpenCode's specialized SOTA Image Generation sub-agent.
-Your goal is to generate photorealistic, high-fidelity images using the Best SOTA Knee model (\`${sotaModelId}\` for ~$0.03/image).
+Your goal is to generate photorealistic, high-fidelity images using the Best SOTA Knee model (\`${sotaModelId}\`, ${sotaImageCost}).
 
 When asked to generate high-fidelity images:
 1. Construct a hyper-detailed visual prompt specifying lighting, camera angle, texture, and style.
-2. Call your \`image_generate\` tool with \`image_model: "${sotaModelId}"\` and specify the \`output_path\` filename (e.g. \`output.png\`).`, [sotaModelId, chatDriverModelId]);
+2. Call your \`image_generate\` tool with \`image_model: "${sotaModelId}"\` and specify the \`output_path\` filename (e.g. \`output.png\`).`, [sotaModelId, sotaImageCost, chatDriverModelId]);
 
   const downloadFile = (filename: string, content: string, type: string = 'text/plain') => {
     const element = document.createElement("a");
@@ -289,19 +372,20 @@ When asked to generate high-fidelity images:
   return (
     <div className="flex flex-col gap-6 p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto w-full">
       
-      {/* Top Section: OpenCode Configuration (opencode.json) */}
+      {/* Top Section: OpenCode Configuration (opencode.jsonc) */}
       <div className="glass-panel flex flex-col gap-4 rounded-2xl p-4 sm:p-6">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800 pb-4">
           <div>
             <div className="flex items-center gap-2">
               <Terminal className="h-6 w-6 text-cyan-400" />
-              <h2 className="text-xl font-bold text-white">OpenCode Configuration (`opencode.json`)</h2>
-              <span className="rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 px-2.5 py-0.5 text-xs font-bold">
-                Minimal & Clean
+              <h2 className="text-xl font-bold text-white">OpenCode Configuration (`opencode.jsonc`)</h2>
+              <span className="rounded-full bg-violet-500/20 text-violet-300 border border-violet-500/40 px-2.5 py-0.5 text-xs font-bold">
+                JSONC
               </span>
             </div>
             <p className="text-xs text-slate-400 mt-1">
-              Provides optimized `opencode.json` with Pareto Knee role mappings (`build`, `plan`, `general`).
+              Generated as <strong className="text-violet-300">opencode.jsonc</strong> (OpenCode's JSON-with-comments format, distinct from strict <code className="text-cyan-300">opencode.json</code>) — the
+              header and each model line document which axis/pick was used, per the role mapping in "How the Chart Recommends Models."
             </p>
           </div>
 
@@ -311,22 +395,22 @@ When asked to generate high-fidelity images:
               className="flex items-center gap-1.5 rounded-xl border border-cyan-500/50 bg-cyan-500/15 px-3.5 py-2 text-xs font-bold text-cyan-300 hover:bg-cyan-500/25 transition-all shadow-lg shadow-cyan-500/10"
             >
               {copiedConfig ? <Check className="h-4 w-4 text-emerald-400" /> : <Copy className="h-4 w-4" />}
-              <span>{copiedConfig ? 'Copied opencode.json' : 'Copy opencode.json'}</span>
+              <span>{copiedConfig ? 'Copied opencode.jsonc' : 'Copy opencode.jsonc'}</span>
             </button>
 
             <button
-              onClick={() => downloadFile('opencode.json', configJsonString, 'application/json')}
+              onClick={() => downloadFile('opencode.jsonc', configJsonString, 'application/jsonc')}
               className="flex items-center gap-1.5 rounded-xl border border-slate-700 bg-slate-800 px-3.5 py-2 text-xs font-bold text-slate-200 hover:bg-slate-700 hover:text-white transition-colors"
             >
               <Download className="h-4 w-4 text-amber-400" />
-              <span>Download json</span>
+              <span>Download opencode.jsonc</span>
             </button>
           </div>
         </div>
 
         <div className="flex items-center justify-between text-[11px] text-slate-400 font-mono">
-          <span>Place <code className="text-cyan-300 bg-slate-900 px-1.5 py-0.5 rounded">opencode.json</code> in project root directory:</span>
-          <span>OpenRouter Endpoint: <strong className="text-emerald-400">POST https://openrouter.ai/api/v1/images</strong></span>
+          <span>Place <code className="text-cyan-300 bg-slate-900 px-1.5 py-0.5 rounded">opencode.jsonc</code> in project root directory:</span>
+          <span>Image generation via: <strong className="text-emerald-400">POST https://openrouter.ai/api/v1/chat/completions</strong> (<code className="text-cyan-300">openrouter:image_generation</code> tool call — see plugin below)</span>
         </div>
 
         <div className="relative rounded-xl border border-slate-800 bg-slate-950 p-4 font-mono text-xs text-cyan-300 overflow-x-auto shadow-inner">
@@ -420,8 +504,15 @@ When asked to generate high-fidelity images:
             {budgetImageModel && (
               <div className="space-y-1 text-xs">
                 <div className="flex items-center justify-between">
-                  <span className="text-slate-300 font-semibold">{budgetImageModel.name}</span>
-                  <span className="text-amber-400 font-bold">{budgetImageModel.t2iLeaderboardElo ?? 1220} ELO</span>
+                  <button
+                    onClick={() => onSelectModelDetail?.(budgetImageModel)}
+                    className="text-slate-300 font-semibold hover:text-amber-300 hover:underline transition-colors text-left"
+                  >
+                    {budgetImageModel.name}
+                  </button>
+                  <span className="text-amber-400 font-bold">
+                    {budgetImageModel.t2iLeaderboardElo !== null ? `${budgetImageModel.t2iLeaderboardElo} ELO` : 'ELO: N/A'}
+                  </span>
                 </div>
                 <div className="text-[11px] font-mono text-slate-400">{budgetImageModel.id}</div>
               </div>
@@ -465,8 +556,15 @@ When asked to generate high-fidelity images:
             {sotaImageModel && (
               <div className="space-y-1 text-xs">
                 <div className="flex items-center justify-between">
-                  <span className="text-slate-300 font-semibold">{sotaImageModel.name}</span>
-                  <span className="text-cyan-400 font-bold">{sotaImageModel.t2iLeaderboardElo ?? 1279} ELO</span>
+                  <button
+                    onClick={() => onSelectModelDetail?.(sotaImageModel)}
+                    className="text-slate-300 font-semibold hover:text-cyan-300 hover:underline transition-colors text-left"
+                  >
+                    {sotaImageModel.name}
+                  </button>
+                  <span className="text-cyan-400 font-bold">
+                    {sotaImageModel.t2iLeaderboardElo !== null ? `${sotaImageModel.t2iLeaderboardElo} ELO` : 'ELO: N/A'}
+                  </span>
                 </div>
                 <div className="text-[11px] font-mono text-slate-400">{sotaImageModel.id}</div>
               </div>

@@ -48,3 +48,5 @@ Thumbs.db
 # Local user configs / secrets
 opencode.json
 auth.json
+
+tmp

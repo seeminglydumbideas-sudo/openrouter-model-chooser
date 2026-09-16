@@ -15,3 +15,12 @@
      * ? -> costly but more performant model
      * and set default_agent
  
+
+model
+small_model
+default_agent 
+
+
+
+jarvis (primary) -> just5 verify o
+-> sub-agents

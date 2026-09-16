@@ -414,28 +414,6 @@ function calculateKneedle(
   return maxDist > 0.015 ? kneeModel : null;
 }
 
-// Find Knee Point (Elbow) Model using Kneedle Algorithm
-export function findKneePointModel(
-  paretoModels: ProcessedModel[],
-  xKey: AxisMetricKey,
-  yKey: AxisMetricKey,
-  isXLog: boolean = false,
-  isYLog: boolean = false
-): ProcessedModel | null {
-  if (paretoModels.length < 3) return null;
-
-  const isXCost = xKey.toLowerCase().includes('cost');
-  let candidateModels = paretoModels;
-  if (isXCost) {
-    const budgetModels = paretoModels.filter(m => getMetricValue(m, xKey)! <= 2.5);
-    if (budgetModels.length >= 3) {
-      candidateModels = budgetModels;
-    }
-  }
-
-  return calculateKneedle(candidateModels, xKey, yKey, isXLog, isYLog);
-}
-
 export interface KneeWinners {
   budgetKnee: ProcessedModel | null;
   sotaKnee: ProcessedModel | null;

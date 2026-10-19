@@ -461,12 +461,12 @@ When asked to generate high-fidelity images:
         <div className="flex items-center justify-between border-b border-slate-800 pb-3">
           <div className="flex items-center gap-2">
             <ImageIcon className="h-5 w-5 text-pink-400" />
-            <h3 className="text-base font-bold text-white">Pareto Knee Sub-Agent Specs (`.opencode/agent/`)</h3>
+            <h3 className="text-base font-bold text-white">Pareto Knee Sub-Agent Specs (`.opencode/agents/`)</h3>
             <span className="rounded-full bg-pink-500/20 text-pink-300 border border-pink-500/40 px-2.5 py-0.5 text-xs font-bold">
               Sub-Agent Files
             </span>
           </div>
-          <span className="text-xs text-slate-400 font-mono">Place in `.opencode/agent/` in workspace</span>
+          <span className="text-xs text-slate-400 font-mono">Place in `.opencode/agents/` in workspace</span>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -587,9 +587,9 @@ When asked to generate high-fidelity images:
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-slate-300 font-mono text-[11px] pt-1">
           <div className="bg-slate-900/90 border border-slate-800 p-2.5 rounded-lg space-y-1">
             <div className="text-amber-400 font-sans font-bold">1. Create Folder Structure:</div>
-            <div className="text-cyan-300">mkdir -p .opencode/plugin .opencode/agent</div>
+            <div className="text-cyan-300">mkdir -p .opencode/plugin .opencode/agents</div>
             <div className="text-slate-400"># Put image-generation.js in .opencode/plugin/</div>
-            <div className="text-slate-400"># Put image_budget.md & image_sota.md in .opencode/agent/</div>
+            <div className="text-slate-400"># Put image_budget.md & image_sota.md in .opencode/agents/</div>
           </div>
           <div className="bg-slate-900/90 border border-slate-800 p-2.5 rounded-lg space-y-1">
             <div className="text-amber-400 font-sans font-bold">2. Trigger Sub-Agents in OpenCode:</div>

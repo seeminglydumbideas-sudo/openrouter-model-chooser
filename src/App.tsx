@@ -8,12 +8,15 @@ import { OpenCodeConfigView } from './components/OpenCodeConfigView';
 import { MethodologyView } from './components/MethodologyView';
 import { ModelDetailModal } from './components/ModelDetailModal';
 import type { ProcessedModel, AxisMetricKey } from './types/openrouter';
-import { getInitialModels, fetchLiveModels } from './services/modelService';
+import { getInitialModels, fetchLiveSnapshot, processSnapshot } from './services/modelService';
+import { fetchHistoryIndex, saveSnapshot, forgetDay, type DaySummary } from './services/history';
 
 export default function App() {
   const [models, setModels] = useState<ProcessedModel[]>(() => getInitialModels());
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [isLive, setIsLive] = useState<boolean>(false);
+  // Daily snapshots kept by the server; null when there is no history endpoint.
+  const [historyDays, setHistoryDays] = useState<DaySummary[] | null>(null);
 
   const [activeTab, setActiveTab] = useState<'scatter' | 'opencode' | 'table' | 'methodology'>('scatter');
   const [selectedModelDetail, setSelectedModelDetail] = useState<ProcessedModel | null>(null);
@@ -36,16 +39,20 @@ export default function App() {
   const loadLiveModels = useCallback(async () => {
     setIsLoading(true);
     try {
-      const liveData = await fetchLiveModels();
-      if (liveData && liveData.length > 0) {
+      const snapshot = await fetchLiveSnapshot();
+      const liveData = processSnapshot(snapshot);
+      if (liveData.length > 0) {
         setModels(liveData);
         setIsLive(true);
+        // Keep today's fetch (one record per day, replaced by later fetches).
+        if (await saveSnapshot(snapshot)) forgetDay(new Date().toISOString().slice(0, 10));
       }
     } catch (err) {
       console.warn('Using cached snapshot data due to API notice:', err);
       setIsLive(false);
     } finally {
       setIsLoading(false);
+      setHistoryDays(await fetchHistoryIndex());
     }
   }, []);
 
@@ -96,6 +103,8 @@ export default function App() {
         {activeTab === 'scatter' && (
           <ScatterPlotView
             models={models}
+            isLive={isLive}
+            historyDays={historyDays}
             selectedModel={selectedModelDetail}
             onSelectModel={setSelectedModelDetail}
             yAxisKey={yAxisKey}

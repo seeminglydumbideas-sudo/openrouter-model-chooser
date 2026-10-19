@@ -26,6 +26,7 @@ Model data is fetched live from OpenRouter on every load (a bundled snapshot is 
 - 📐 **Picks computed on the Pareto frontier:**
   - **Best Budget Knee** — the elbow of the cheap end (Kneedle algorithm): most capability per dollar.
   - **Value Recovery** — the first model above the knee where paying more buys meaningful capability again. The badge shows what it buys over the knee (points gained, cost multiple, points per cost doubling).
+- 🕰️ **Timeline** — each live fetch is kept in `history/` (one gzipped snapshot per day, ~90 KB). Under the matrix, a histogram of what changed each day (models added, rescored, repriced, removed) with a slider and a Play button replays the matrix day by day. Needs the dev server or the container (not plain static hosting). `make fake-history` writes 30 synthetic days to try it out.
 - 📖 **Methodology tab** — every formula, the alternatives that were tried and rejected, and the references behind them.
 - 🔍 **Catalog Table** — search, provider filters, free/reasoning/multimodal toggles, CSV export.
 - ⚙️ **OpenCode Config generator** — see below.
@@ -40,7 +41,7 @@ Batch-only (`:batch`) prices are excluded so the numbers reflect interactive use
 
 ```bash
 make container   # build the app and the image
-make run         # http://localhost:8080 — mounts ./.opencode for "Write on disk"
+make run         # http://localhost:8080 — mounts ./.opencode for "Write on disk", ./history for the timeline
 make stop
 ```
 

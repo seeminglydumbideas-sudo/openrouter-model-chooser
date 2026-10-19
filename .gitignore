@@ -51,3 +51,18 @@ auth.json
 
 tmp
 .openrouter-token
+
+# Daily OpenRouter snapshots (server/history.ts); regenerate fake ones with `make fake-history`
+## generated during dev:
+history/2026-09-*
+history/2026-10-0*
+history/2026-10-10*
+history/2026-10-11*
+history/2026-10-12*
+history/2026-10-13*
+history/2026-10-14*
+history/2026-10-15*
+history/2026-10-16*
+history/2026-10-17*
+history/2026-10-18*
+

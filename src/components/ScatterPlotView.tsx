@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { 
   ScatterChart, 
   Scatter, 
@@ -15,13 +15,19 @@ import {
 import type { ProcessedModel, AxisMetricKey } from '../types/openrouter';
 import { AXIS_OPTIONS } from '../types/openrouter';
 import { getMetricValue, calculateParetoFrontier, findMarginalGainWinners, findValueRecoveryModel, computePickGain, getProviderColor } from '../services/modelService';
+import { loadDay, type DaySummary } from '../services/history';
+import { HistoryTimeline, type TimelineEntry } from './HistoryTimeline';
 import { Search, Layers, Info, Sparkles, Sliders, ExternalLink, Zap, Repeat } from 'lucide-react';
 
 // X-axis is fixed to Blended Cost — this is the only cost view the app supports.
 const X_AXIS_KEY: AxisMetricKey = 'blendedCostPerM';
 
+const PLAY_STEP_MS = 900;
+
 interface ScatterPlotViewProps {
   models: ProcessedModel[];
+  isLive: boolean;
+  historyDays: DaySummary[] | null;
   selectedModel: ProcessedModel | null;
   onSelectModel: (model: ProcessedModel) => void;
   yAxisKey: AxisMetricKey;
@@ -47,7 +53,9 @@ interface ScatterPlotViewProps {
 }
 
 export const ScatterPlotView: React.FC<ScatterPlotViewProps> = ({
-  models,
+  models: currentModels,
+  isLive,
+  historyDays,
   selectedModel,
   onSelectModel,
   yAxisKey,
@@ -73,6 +81,65 @@ export const ScatterPlotView: React.FC<ScatterPlotViewProps> = ({
 }) => {
   const [sizeMetric, setSizeMetric] = useState<'context' | 'cost' | 'equal'>('context');
   const [excludeBatch, setExcludeBatch] = useState<boolean>(true);
+
+  // Timeline: one entry per recorded day. Today's live fetch is the last entry
+  // even if the server has not stored it (yet). selectedDate null = latest.
+  const timeline = useMemo<TimelineEntry[]>(() => {
+    if (!historyDays || historyDays.length === 0) return [];
+    const today = new Date().toISOString().slice(0, 10);
+    if (!isLive || historyDays.some(d => d.date === today)) return historyDays;
+    return [...historyDays, { date: today, synthetic: false, count: currentModels.length, added: 0, removed: 0, repriced: 0, rescored: 0, unsaved: true }];
+  }, [historyDays, isLive, currentModels.length]);
+
+  const [selectedDate, setSelectedDate] = useState<string | null>(null);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [dayModels, setDayModels] = useState<{ date: string; models: ProcessedModel[] } | null>(null);
+
+  const selectedIndex = useMemo(() => {
+    const i = selectedDate ? timeline.findIndex(d => d.date === selectedDate) : -1;
+    return i >= 0 ? i : timeline.length - 1;
+  }, [timeline, selectedDate]);
+  const shownDate = timeline[selectedIndex]?.date ?? null;
+  // The live fetch already is today's data; anything else comes from the server.
+  const showsCurrent = shownDate === null || (isLive && shownDate === new Date().toISOString().slice(0, 10));
+
+  const isLoadingDay = !showsCurrent && dayModels?.date !== shownDate;
+
+  useEffect(() => {
+    if (showsCurrent || !shownDate) return;
+    let cancelled = false;
+    loadDay(shownDate)
+      .then(models => { if (!cancelled) setDayModels({ date: shownDate, models }); })
+      .catch(err => console.warn('History record unavailable:', err));
+    return () => { cancelled = true; };
+  }, [shownDate, showsCurrent]);
+
+  // While a day loads, the previous one stays on screen, so points move instead of blinking.
+  const models = showsCurrent || !dayModels ? currentModels : dayModels.models;
+
+  useEffect(() => {
+    // Wait for the current day to be on screen before stepping on.
+    if (!isPlaying || isLoadingDay || selectedIndex >= timeline.length - 1) return;
+    const timer = setTimeout(() => {
+      const next = selectedIndex + 1;
+      if (next >= timeline.length - 1) {
+        setSelectedDate(null);
+        setIsPlaying(false);
+      } else {
+        setSelectedDate(timeline[next].date);
+      }
+    }, PLAY_STEP_MS);
+    return () => clearTimeout(timer);
+  }, [isPlaying, selectedIndex, timeline, isLoadingDay]);
+
+  const selectDay = (index: number) => {
+    setIsPlaying(false);
+    setSelectedDate(index >= timeline.length - 1 ? null : timeline[index].date);
+  };
+  const togglePlay = () => {
+    if (!isPlaying && selectedIndex >= timeline.length - 1) setSelectedDate(timeline[0].date);
+    setIsPlaying(!isPlaying);
+  };
 
   const xAxisOption = AXIS_OPTIONS.find(a => a.key === X_AXIS_KEY)!;
   const yAxisOption = AXIS_OPTIONS.find(a => a.key === yAxisKey) || AXIS_OPTIONS[1];
@@ -695,6 +762,18 @@ export const ScatterPlotView: React.FC<ScatterPlotViewProps> = ({
             </ResponsiveContainer>
           )}
         </div>
+
+        {/* Day histogram + slider: replays the recorded history in the matrix */}
+        {timeline.length > 0 && (
+          <HistoryTimeline
+            entries={timeline}
+            selectedIndex={selectedIndex}
+            onSelect={selectDay}
+            isPlaying={isPlaying}
+            onTogglePlay={togglePlay}
+            isLoadingDay={isLoadingDay}
+          />
+        )}
 
         {/* Selected Model Quick Action Banner */}
         {selectedModel && (

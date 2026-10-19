@@ -1,13 +1,14 @@
 # Small Node server: serves the pre-built SPA from dist/ and the OpenCode
 # Config tab's "Write on disk" endpoint. No npm dependencies — Node 24 runs
 # server/*.ts directly. Mount a project's .opencode/ on /app/.opencode to
-# receive opencode.jsonc and plugins/image-generation.js (see `make run`).
+# receive opencode.jsonc and plugins/image-generation.js, and a host directory
+# on /app/history to keep the daily model snapshots (see `make run`).
 FROM docker.io/library/node:24-alpine
 
 WORKDIR /app
 COPY dist ./dist
 COPY server ./server
-RUN mkdir -p .opencode
+RUN mkdir -p .opencode history
 
 ENV PORT=8080
 EXPOSE 8080

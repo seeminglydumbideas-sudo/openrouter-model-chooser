@@ -20,6 +20,21 @@ Data: `src/data/snapshot.json` (bundled fallback) is replaced at runtime by a li
 `https://openrouter.ai/api/v1/models`. **Live picks drift** — a model that wins today may not next
 week. That is why config is generated, not hand-written.
 
+**Daily history (2026-10-19).** Every successful live fetch is POSTed to `/__history`
+(`server/history.ts`, hosted by both the Vite dev server and `server/server.ts`, like "Write on disk")
+and stored as `history/YYYY-MM-DD.json.gz` — the raw `/api/v1/models` payload + Image API ids, ~90 KB.
+**At most one record per day:** the server picks the UTC date and a later fetch replaces that day's
+record. `HISTORY_DIR` overrides the directory; `make run` mounts `HISTORY_DIR` (default `./history`,
+git-ignored) on `/app/history`. Under the 2D Matrix, `HistoryTimeline.tsx` shows a changes-per-day
+histogram (added / rescored / repriced stacked, removed below the baseline — computed server-side by
+diffing consecutive records) plus a slider and Play; the selected day's record is processed with the
+same `processSnapshot` as live data, so all picks recompute for that day. Only the matrix time-travels —
+the OpenCode and Catalog tabs always use the current data. Hidden when `GET /__history` doesn't answer.
+**Synthetic data:** `scripts/generate-fake-history.ts` (`make fake-history`) writes 30 seeded days
+flagged `synthetic: true` (shown as such in the UI), anchored on the earliest real record so the series
+joins it without a jump (falls back to `src/data/snapshot.json`); retirements are bundled-snapshot
+models the anchor no longer lists. Never overwrites a real record.
+
 Four tabs: **2D Matrix** (scatter plot) · **OpenCode Config** (generator) · **Catalog Table** ·
 **Methodology** (`MethodologyView.tsx` — documents every formula below, with references).
 

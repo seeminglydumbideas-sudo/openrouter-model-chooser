@@ -299,19 +299,29 @@ export function getInitialModels(): ProcessedModel[] {
   return restrictToImageApi(base, new Set(imageApiModelIds));
 }
 
-async function fetchImageApiModelIds(): Promise<Set<string>> {
+async function fetchImageApiModelIds(): Promise<string[]> {
   try {
     const response = await fetch('https://openrouter.ai/api/v1/images/models');
     const json = await response.json();
-    if (response.ok && Array.isArray(json.data)) return new Set(json.data.map((m: { id: string }) => m.id));
+    if (response.ok && Array.isArray(json.data)) return json.data.map((m: { id: string }) => m.id);
   } catch {
     // fall through to the bundled list
   }
-  return new Set(imageApiModelIds);
+  return imageApiModelIds;
 }
 
-export async function fetchLiveModels(): Promise<ProcessedModel[]> {
-  const [response, imageApiIds] = await Promise.all([
+// One fetch of the market as OpenRouter serves it — what the daily history keeps.
+export interface RawSnapshot {
+  models: OpenRouterModelRaw[];
+  imageApiModels: string[];
+}
+
+export function processSnapshot(snapshot: RawSnapshot): ProcessedModel[] {
+  return restrictToImageApi(snapshot.models.map(processRawModel), new Set(snapshot.imageApiModels));
+}
+
+export async function fetchLiveSnapshot(): Promise<RawSnapshot> {
+  const [response, imageApiModels] = await Promise.all([
     fetch('https://openrouter.ai/api/v1/models'),
     fetchImageApiModelIds(),
   ]);
@@ -320,7 +330,7 @@ export async function fetchLiveModels(): Promise<ProcessedModel[]> {
   }
   const json = await response.json();
   if (Array.isArray(json.data)) {
-    return restrictToImageApi(json.data.map(processRawModel), imageApiIds);
+    return { models: json.data, imageApiModels };
   }
   throw new Error('Invalid OpenRouter API format');
 }

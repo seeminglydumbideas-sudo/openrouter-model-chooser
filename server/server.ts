@@ -1,14 +1,16 @@
-// Container server: serves the built SPA from dist/ and the "Write on disk"
-// endpoint. No dependencies — Node 24 runs this TypeScript file directly
+// Container server: serves the built SPA from dist/, the "Write on disk"
+// endpoint and the daily model history. No dependencies — Node 24 runs this TypeScript file directly
 // (type stripping). Run from the repo root: node server/server.ts
 import http from 'node:http'
 import fs from 'node:fs/promises'
 import path from 'node:path'
 import { WRITE_CONFIG_ROUTE, handleWriteConfig, resolveOutputDir } from './writeConfig.ts'
+import { HISTORY_ROUTE, handleHistory, resolveHistoryDir } from './history.ts'
 
 const root = process.cwd()
 const distDir = path.resolve(root, 'dist')
 const outputDir = resolveOutputDir(root)
+const historyDir = resolveHistoryDir(root)
 const port = Number(process.env.PORT ?? 8080)
 
 const MIME: Record<string, string> = {
@@ -53,13 +55,14 @@ async function serveStatic(urlPath: string, res: http.ServerResponse) {
 const server = http.createServer((req, res) => {
   const urlPath = new URL(req.url ?? '/', 'http://localhost').pathname
   if (urlPath === WRITE_CONFIG_ROUTE) return void handleWriteConfig(req, res, outputDir)
+  if (urlPath === HISTORY_ROUTE || urlPath.startsWith(HISTORY_ROUTE + '/')) return void handleHistory(req, res, historyDir)
   if (req.method !== 'GET' && req.method !== 'HEAD') {
     res.statusCode = 405
     return void res.end()
   }
   void serveStatic(urlPath, res)
 }).listen(port, () => {
-  console.log(`Serving ${distDir} on http://0.0.0.0:${port} — writes into: ${outputDir}`)
+  console.log(`Serving ${distDir} on http://0.0.0.0:${port} — writes into: ${outputDir}, history: ${historyDir}`)
 })
 
 // As the container's PID 1, Node gets no default SIGTERM/SIGINT handling, so

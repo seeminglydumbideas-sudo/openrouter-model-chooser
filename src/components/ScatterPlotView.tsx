@@ -14,7 +14,7 @@ import {
 } from 'recharts';
 import type { ProcessedModel, AxisMetricKey } from '../types/openrouter';
 import { AXIS_OPTIONS } from '../types/openrouter';
-import { getMetricValue, calculateParetoFrontier, findMarginalGainWinners, findValueRecoveryModel, getProviderColor } from '../services/modelService';
+import { getMetricValue, calculateParetoFrontier, findMarginalGainWinners, findValueRecoveryModel, computePickGain, getProviderColor } from '../services/modelService';
 import { Search, Layers, Info, Sparkles, Sliders, ExternalLink, Zap, Repeat } from 'lucide-react';
 
 // X-axis is fixed to Blended Cost — this is the only cost view the app supports.
@@ -156,6 +156,13 @@ export const ScatterPlotView: React.FC<ScatterPlotViewProps> = ({
     if (!showPareto) return null;
     return findValueRecoveryModel(paretoModels, X_AXIS_KEY, yAxisKey, isXLog, isYLog, kneeWinners.budgetKnee);
   }, [paretoModels, yAxisKey, isXLog, isYLog, kneeWinners.budgetKnee, showPareto]);
+
+  // What the Value Recovery pick buys over the Budget Knee, so its significance
+  // is visible next to its name.
+  const valueRecoveryGain = useMemo(() => {
+    if (!valueRecoveryModel || !kneeWinners.budgetKnee) return null;
+    return computePickGain(kneeWinners.budgetKnee, valueRecoveryModel, X_AXIS_KEY, yAxisKey);
+  }, [valueRecoveryModel, kneeWinners.budgetKnee, yAxisKey]);
 
   // Secant baseline line points
   const secantLineData = useMemo(() => {
@@ -453,10 +460,21 @@ export const ScatterPlotView: React.FC<ScatterPlotViewProps> = ({
                 <div
                   onClick={() => onSelectModel(valueRecoveryModel)}
                   className="flex items-center gap-1.5 rounded-lg border border-violet-500/50 bg-violet-500/15 px-3 py-1 text-xs font-bold text-violet-300 shadow-lg shadow-violet-500/10 cursor-pointer hover:bg-violet-500/25 transition-all"
-                  title="Value Recovery: marginal value dipped above the Budget Knee, then resumed a good rate here"
+                  title={
+                    'Value Recovery: marginal value dipped above the Budget Knee, then resumed a good rate here' +
+                    (valueRecoveryGain
+                      ? `\nvs. Budget Knee: ${valueRecoveryGain.deltaScore >= 0 ? '+' : ''}${valueRecoveryGain.deltaScore.toFixed(1)} pts (${(valueRecoveryGain.pctGain * 100).toFixed(0)}%) for ×${valueRecoveryGain.costMultiple.toFixed(1)} cost — ${valueRecoveryGain.pointsPerDoubling.toFixed(2)} pts per cost doubling`
+                      : '')
+                  }
                 >
                   <Repeat className="h-3.5 w-3.5 text-violet-400 animate-pulse" />
                   <span>🔁 Value Recovery: {valueRecoveryModel.shortName}</span>
+                  {valueRecoveryGain && (
+                    <span className="font-medium text-violet-200/80">
+                      · +{valueRecoveryGain.deltaScore.toFixed(1)} pts for ×{valueRecoveryGain.costMultiple.toFixed(valueRecoveryGain.costMultiple < 10 ? 1 : 0)} cost
+                      · {valueRecoveryGain.pointsPerDoubling.toFixed(1)}/2×
+                    </span>
+                  )}
                 </div>
               )}
               <div className="flex items-center gap-1.5 rounded-lg border border-emerald-500/40 bg-emerald-500/10 px-3 py-1 text-xs font-semibold text-emerald-300">

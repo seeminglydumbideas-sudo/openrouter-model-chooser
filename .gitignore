@@ -50,3 +50,4 @@ opencode.json
 auth.json
 
 tmp
+.openrouter-token

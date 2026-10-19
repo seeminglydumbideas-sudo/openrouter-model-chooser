@@ -122,10 +122,7 @@ export default function App() {
         )}
 
         {activeTab === 'opencode' && (
-          <OpenCodeConfigView
-            models={models}
-            onSelectModelDetail={setSelectedModelDetail}
-          />
+          <OpenCodeConfigView models={models} />
         )}
 
         {activeTab === 'table' && (

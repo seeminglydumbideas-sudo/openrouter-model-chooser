@@ -1,0 +1,168 @@
+#!/bin/sh
+# setup-user-config — install the OpenRouter Model Chooser's generated OpenCode
+# config user-wide, merged into your existing one.
+#
+#   setup-user-config [SOURCE_DIR]     default SOURCE_DIR: ./.opencode
+#
+# SOURCE_DIR holds opencode.jsonc and plugins/image-generation.js, as written by
+# "Write on disk" or unpacked from the downloaded zip. The script:
+#   1. merges SOURCE_DIR/opencode.jsonc into ~/.config/opencode/opencode.jsonc
+#      (or opencode.json if that is what you have), after a timestamped backup;
+#   2. copies the plugin to ~/.config/opencode/plugins/image-generation.js.
+#
+# Every line the merge adds ends with "// @ormc". Re-running the script first
+# removes those lines (restoring any value of yours they replaced, kept as
+# "// @ormc was=<old value>"), then merges the new config — so it can be run
+# again whenever the picks change. Your own settings are kept; where both set
+# the same key, the generated value wins until you remove the tagged line.
+# Comments in your existing config are not preserved (the backup keeps them).
+#
+# The token: OpenCode and the plugin read .openrouter-token in the config
+# directory (~/.config/opencode/.openrouter-token by default).
+set -eu
+
+SOURCE_DIR=${1:-./.opencode}
+CONFIG_DIR=${OPENCODE_CONFIG_DIR:-"${XDG_CONFIG_HOME:-$HOME/.config}/opencode"}
+
+if [ ! -f "$SOURCE_DIR/opencode.jsonc" ]; then
+  echo "setup-user-config: $SOURCE_DIR/opencode.jsonc not found" >&2
+  echo "usage: setup-user-config [SOURCE_DIR]   (default: ./.opencode)" >&2
+  exit 1
+fi
+command -v python3 >/dev/null 2>&1 || { echo "setup-user-config: python3 is required" >&2; exit 1; }
+
+mkdir -p "$CONFIG_DIR/plugins"
+if [ -f "$CONFIG_DIR/opencode.jsonc" ]; then
+  TARGET="$CONFIG_DIR/opencode.jsonc"
+  [ -f "$CONFIG_DIR/opencode.json" ] && echo "note: both opencode.jsonc and opencode.json exist in $CONFIG_DIR; merging into opencode.jsonc" >&2
+elif [ -f "$CONFIG_DIR/opencode.json" ]; then
+  TARGET="$CONFIG_DIR/opencode.json"
+else
+  TARGET="$CONFIG_DIR/opencode.jsonc"
+fi
+
+if [ -f "$TARGET" ]; then
+  BACKUP="$TARGET.bak.$(date +%Y%m%d-%H%M%S).$$"
+  cp -p "$TARGET" "$BACKUP"
+  echo "backup:  $BACKUP"
+fi
+
+python3 - "$SOURCE_DIR/opencode.jsonc" "$TARGET" "$CONFIG_DIR" <<'PY'
+import json, os, re, sys
+
+TAG = "// @ormc"
+SOURCE, TARGET, CONFIG_DIR = sys.argv[1], sys.argv[2], os.path.abspath(sys.argv[3])
+# The project config reads the token from the project root; user-wide it lives
+# next to the user config. Written with "~/" when under $HOME.
+home = os.path.expanduser("~")
+token_path = os.path.join(CONFIG_DIR, ".openrouter-token")
+if token_path.startswith(home + os.sep):
+    token_path = "~/" + os.path.relpath(token_path, home)
+TOKEN_REF = "{file:" + token_path + "}"
+
+
+def parse_jsonc(text):
+    """JSON with // and /* */ comments and trailing commas → Python object."""
+    out, i, n = [], 0, len(text)
+    while i < n:
+        c = text[i]
+        if c == '"':
+            j = i + 1
+            while j < n and text[j] != '"':
+                j += 2 if text[j] == "\\" else 1
+            out.append(text[i:j + 1])
+            i = j + 1
+        elif text.startswith("//", i):
+            while i < n and text[i] != "\n":
+                i += 1
+        elif text.startswith("/*", i):
+            end = text.find("*/", i + 2)
+            i = n if end < 0 else end + 2
+        else:
+            out.append(c)
+            i += 1
+    cleaned = re.sub(r",(\s*[}\]])", r"\1", "".join(out))
+    return json.loads(cleaned) if cleaned.strip() else {}
+
+
+WAS_LINE = re.compile(r'^(\s*"(?:[^"\\]|\\.)*"\s*:\s*).*?// @ormc was=(.*)$')
+
+
+def strip_tagged(text):
+    """Remove lines from an earlier merge; restore values they replaced."""
+    kept = []
+    for line in text.splitlines():
+        if TAG not in line:
+            kept.append(line)
+            continue
+        m = WAS_LINE.match(line)
+        if m:
+            kept.append(m.group(1) + m.group(2) + ",")
+    return "\n".join(kept)
+
+
+# Merge into a tree that remembers where each node came from:
+# ("obj", [(key, node)], tagged) · ("arr", [node], tagged) · ("val", value, tagged, was)
+def own(v, tagged):
+    if isinstance(v, dict):
+        return ("obj", [(k, own(x, tagged)) for k, x in v.items()], tagged)
+    if isinstance(v, list):
+        return ("arr", [own(x, tagged) for x in v], tagged)
+    return ("val", v, tagged, None)
+
+
+def merge(user, gen):
+    if isinstance(user, dict) and isinstance(gen, dict):
+        items = [(k, merge(v, gen[k]) if k in gen else own(v, False)) for k, v in user.items()]
+        items += [(k, own(v, True)) for k, v in gen.items() if k not in user]
+        return ("obj", items, False)
+    if isinstance(user, list) and isinstance(gen, list):
+        return ("arr", [own(v, False) for v in user] + [own(v, True) for v in gen if v not in user], False)
+    if user == gen:
+        return own(user, False)
+    node = own(gen, True)
+    was = json.dumps(user, ensure_ascii=False, separators=(",", ":"))
+    return node if node[0] != "val" else ("val", gen, True, was)
+
+
+def render(node, indent=0, prefix="", last=True):
+    pad = "  " * indent
+    comma = "" if last else ","
+    kind, tagged = node[0], node[2]
+    tag = f" {TAG}" if tagged else ""
+    if kind == "val":
+        was = f" was={node[3]}" if node[3] is not None else ""
+        return [f"{pad}{prefix}{json.dumps(node[1], ensure_ascii=False)}{comma}{tag}{was}"]
+    children, (open_, close) = node[1], ("{", "}") if kind == "obj" else ("[", "]")
+    if not children:
+        return [f"{pad}{prefix}{open_}{close}{comma}{tag}"]
+    lines = [f"{pad}{prefix}{open_}{tag}"]
+    for idx, child in enumerate(children):
+        key, sub = child if kind == "obj" else (None, child)
+        lines += render(sub, indent + 1, f"{json.dumps(key)}: " if key is not None else "", idx == len(children) - 1)
+    return lines + [f"{pad}{close}{comma}{tag}"]
+
+
+try:
+    user_text = open(TARGET, encoding="utf-8").read()
+except FileNotFoundError:
+    user_text = ""
+user = parse_jsonc(strip_tagged(user_text))
+gen = parse_jsonc(open(SOURCE, encoding="utf-8").read())
+gen.setdefault("providers", {}).setdefault("openrouter", {}).setdefault("settings", {})["apiKey"] = TOKEN_REF
+
+header = [
+    f'{TAG} Lines ending in "{TAG}" were added by setup-user-config (OpenRouter Model Chooser).',
+    f"{TAG} Re-run it to update them; it removes them first and restores any \"was=\" value.",
+]
+with open(TARGET, "w", encoding="utf-8") as f:
+    f.write("\n".join(header + render(merge(user, gen))) + "\n")
+print(f"merged:  {TARGET}")
+PY
+
+cp "$SOURCE_DIR/plugins/image-generation.js" "$CONFIG_DIR/plugins/image-generation.js" 2>/dev/null \
+  && echo "plugin:  $CONFIG_DIR/plugins/image-generation.js" \
+  || echo "note: $SOURCE_DIR/plugins/image-generation.js not found; plugin not installed" >&2
+
+[ -s "$CONFIG_DIR/.openrouter-token" ] || echo "token:   put your OpenRouter token in $CONFIG_DIR/.openrouter-token (chmod 600)"
+echo "then:    opencode service restart"

@@ -307,6 +307,102 @@ score(m)  = slope(m) × weight(m)
         </p>
       </Section>
 
+      {/* Bug 3: insignificant rebounds */}
+      <Section icon={<AlertTriangle className="h-4.5 w-4.5 text-rose-400" />} title="Bug Found #3: a steep slope from a negligible gain">
+        <p>
+          Slope divides a score gain by a log-price distance. When two adjacent Pareto models are priced close together,
+          even a tiny score difference produces a steep slope. On the Coding axis (live data, 2026-10-19) this picked
+          Claude Opus 5:
+        </p>
+        <DataTable
+          headers={['Step', 'Price', 'Δ score', 'Slope']}
+          rows={[
+            ['GPT-5.6 Sol → Claude Opus 5', '$8 → $10', '+0.6', '6.2  ← "rebound", 4.4× the prior step'],
+            ['Muse Spark 1.3 → Claude Sonnet 5.5 (Intelligence)', '$2 → $4', '+7.9', '26.3'],
+          ]}
+        />
+        <p>
+          A 0.6-point gain is probably within benchmark noise, yet it passed the ratio test because the prior step was
+          even flatter. Relative to the Budget Knee, the two picks differ widely:
+        </p>
+        <DataTable
+          headers={['Axis → pick', 'Gain over Budget Knee', 'Points per cost doubling']}
+          rows={[
+            ['Intelligence → Sonnet 5.5', '+14.2 pts (+34%) for ×53 cost', '2.5'],
+            ['Coding → Opus 5', '+6.5 pts (+9%) for ×132 cost', '0.9'],
+          ]}
+        />
+        <p>
+          <strong className="text-white">Fix — a significance gate.</strong> The rebound step itself must deliver a
+          minimum share of all the capability available above the Budget Knee:
+        </p>
+        <Formula>{`upperTierGain = score(best on frontier) − score(Budget Knee)
+stepShare     = ( score(candidate) − score(previous) ) / upperTierGain
+qualifies only if  stepShare ≥ 0.25`}</Formula>
+        <DataTable
+          headers={['Axis → candidate', 'Step share', 'Result']}
+          rows={[
+            ['Intelligence → Sonnet 5.5', '7.9 / 15.8 = 50%', 'passes'],
+            ['Intelligence → MiMo v2.6 Pro', '1.5 / 15.8 = 9.5%', 'fails (was a near-tie with Sonnet)'],
+            ['Coding → Opus 5', '0.6 / 10.1 = 6%', 'fails'],
+            ['Coding → Fable 5.1', '3.6 / 10.1 = 36%', 'passes → becomes the pick (only remaining candidate)'],
+            ['Agentic → Fable 5.1', '1.4 / 7.0 = 20%', 'fails → no Value Recovery pick'],
+          ]}
+        />
+        <Callout tone="warn">
+          The gate is relative to each axis' own range, so it's scale-free — unlike the rejected fixed price multiplier.
+          But the 25% value is a <strong>judgement call</strong> chosen against one day's data, not a derived constant.
+          Note the gate does not stop a top-of-range pick: on Coding, removing Opus 5 leaves Fable 5.1 — the priciest
+          model, +10.1 pts over the knee for ×262 cost (1.3 pts per doubling) — as the only qualifying rebound, so the
+          boundary weight has nothing to rank it against. "No pick" is now a legitimate outcome; the OpenCode generator
+          then simply omits the opt-in agent or command that would have used it (see section 5). The 2D Matrix badge
+          shows the pick's gain over the Budget Knee and its points per cost doubling, so its significance is visible
+          rather than implied.
+        </Callout>
+      </Section>
+
+      {/* OpenCode config */}
+      <Section icon={<Zap className="h-4.5 w-4.5 text-amber-400" />} title="5. From picks to an OpenCode config">
+        <p>
+          A Value Recovery pick costs ×50–×250 the Budget Knee, which is worth it for a rare hard question and wasteful
+          for the constant background work an agent does. So the generated config (OpenCode 2.0 format) makes every
+          default a Budget Knee pick, and puts the pricier picks behind an explicit, labelled choice:
+        </p>
+        <DataTable
+          headers={['Config entry', 'Pick', 'Why']}
+          rows={[
+            ['build (default primary), model', 'Coding · Budget Knee', 'plan ⇄ build switching must never touch an expensive model'],
+            ['plan', 'Intelligence · Budget Knee', 'OpenCode docs: "a faster model for planning"'],
+            ['general, explore', 'Agentic · Budget Knee', 'multi-step tool work that fires often; explore would otherwise inherit its caller\'s model'],
+            ['title (v1 small_model)', 'Intelligence · Budget Knee', 'lightweight tasks'],
+            ['build-premium (opt-in primary)', 'Coding · Value Recovery', 'red, cost in its description, 25-step cap; omitted if no pick'],
+            ['/deep command', 'Intelligence · Value Recovery', 'one question escalated, session stays cheap; omitted if no pick'],
+            ['image_generate tool (plugin), /image', 'Text-to-Image · Budget Knee / SOTA', 'tiers "budget" / "best"; OpenCode asks before each paid image'],
+          ]}
+        />
+        <p>Every other model stays selectable in the <code className="text-cyan-300">/model</code> picker, with its cost shown in its name:</p>
+        <Formula>{`recommended = models on any text axis' Pareto frontier, priced ≥ the cheapest Budget Knee
+
+[✔]   a Budget Knee on any axis
+[$$$] recommended, blended cost ≥ $5/M
+[$$]  any other recommended model
+
+label  = tier · name · $/M · ×(cost / default's cost) · value-pick role
+hidden = blended cost ≥ $5/M, has a benchmark score, on no text axis' frontier`}</Formula>
+        <Callout tone="warn">
+          The $5/M line is absolute on purpose. A first version used "×100 the default's cost", and the default's
+          price moved enough within one day (from $0.079 to $0.086) to drop two $8/M models from [$$$] to [$$]. A
+          price is a judgement call too, but it doesn't move when another model is repriced. OpenCode 2.0 has no model
+          allowlist, so models absent from the config stay visible, just unlabelled.
+        </Callout>
+        <p>
+          <strong className="text-white">Text-to-Image only uses models OpenRouter can run.</strong> The image plugin
+          calls OpenRouter's Image API, so the Text-to-Image axis — in the 2D Matrix too — keeps a score only for
+          models that API serves. Hand-added leaderboard models it doesn't serve (SDXL, Midjourney, DALL-E 3, …) are
+          dropped rather than recommended and then failing.
+        </p>
+      </Section>
+
       {/* Glossary */}
       <Section icon={<ScrollText className="h-4.5 w-4.5 text-slate-400" />} title="Glossary of math concepts used">
         <ul className="flex flex-col gap-2.5 list-disc pl-5 marker:text-slate-600">

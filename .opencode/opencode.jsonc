@@ -1,0 +1,147 @@
+// Generated 2026-10-19T11:25:33.245Z by OpenRouter Model Chooser
+// Coding        (Best Budget): GLM 5.3 Flash
+// Coding        (Value      ): Claude Fable 5.1
+// Coding        (SOTA       ): Claude Fable 5.1
+// Agentic       (Best Budget): GLM 5.3 Flash
+// Agentic       (Value      ): N/A
+// Agentic       (SOTA       ): Claude Fable 5.1
+// Intelligence  (Best Budget): GLM 5.3 Flash
+// Intelligence  (Value      ): Claude Sonnet 5.5
+// Intelligence  (SOTA       ): Claude Opus 5.5
+// Text-to-Image (Best Budget): Nano Banana 2 Lite (Gemini 3.1 Flash Lite Image)
+// Text-to-Image (Value      ): N/A
+// Text-to-Image (SOTA       ): Nano Banana 2 (Gemini 3.1 Flash Image Preview)
+//
+// .opencode/opencode.jsonc — OpenCode 2.0 native config. Prices are blended $/1M tokens ((3×input + output) / 4);
+// "×N" is the cost multiple vs. the default model. Regenerate: picks drift with
+// live pricing. No "$schema": https://opencode.ai/config.json is the v1 schema.
+{
+  "model": "openrouter/z-ai/glm-5.3-flash", // mirrors build: Coding (Best Budget)
+  "default_agent": "build",
+
+  // Only OpenRouter may be used.
+  "policies": [
+    { "action": "provider.use", "resource": "*", "effect": "deny" },
+    { "action": "provider.use", "resource": "openrouter", "effect": "allow" }
+  ],
+
+  // "name" is what the /model picker shows; "disabled": true hides a model.
+  // v2 has no allowlist — models not listed here stay visible, unlabelled.
+  "providers": {
+    "openrouter": {
+      // Token from .openrouter-token in the project root. {file:} resolves from
+      // this file's directory (.opencode/), hence "../". A missing file just
+      // leaves the key empty.
+      "settings": { "apiKey": "{file:../.openrouter-token}" },
+      "models": {
+        // Recommended picks, labelled with their cost impact.
+        "z-ai/glm-5.3-flash":          { "name": "[✔] GLM 5.3 Flash · $0.08/M · default" },
+        "anthropic/claude-haiku-5.5":  { "name": "[$$] Claude Haiku 5.5 · $0.20/M · ×2.6" },
+        "z-ai/glm-5.3":                { "name": "[$$] GLM 5.3 · $0.41/M · ×5.4" },
+        "xiaomi/mimo-v2.6-pro":        { "name": "[$$] MiMo-V2.6-Pro · $0.54/M · ×7.2" },
+        "google/gemini-3.8-flash":     { "name": "[$$] Gemini 3.8 Flash · $1.65/M · ×22" },
+        "meta/muse-spark-1.3":         { "name": "[$$] Muse Spark 1.3 · $2.00/M · ×26" },
+        "x-ai/grok-4.6":               { "name": "[$$] Grok 4.6 · $3.00/M · ×39" },
+        "qwen/qwen3.8-max-0902":       { "name": "[$$] Qwen3.8 Max (0902) · $3.00/M · ×39" },
+        "anthropic/claude-sonnet-5.5": { "name": "[$$] Claude Sonnet 5.5 · $4.00/M · ×53 · Intelligence value pick" },
+        "anthropic/claude-opus-5.5":   { "name": "[$$$] Claude Opus 5.5 · $8.00/M · ×105" },
+        "openai/gpt-5.6-sol":          { "name": "[$$$] GPT-5.6 Sol · $8.00/M · ×105" },
+        "anthropic/claude-opus-5":     { "name": "[$$$] Claude Opus 5 · $10.00/M · ×132" },
+        "anthropic/claude-fable-5.1":  { "name": "[$$$] Claude Fable 5.1 · $20.00/M · ×263 · Coding value pick" },
+        // Hidden: $5+/M models on no axis' Pareto frontier — a cheaper
+        // model scores at least as well on Intelligence, Coding and Agentic alike.
+        "openai/o1-pro":               { "disabled": true }, // $262.50/M
+        "openai/gpt-4":                { "disabled": true }, // $37.50/M
+        "openai/o3-pro":               { "disabled": true }, // $35.00/M
+        "anthropic/claude-opus-4.1":   { "disabled": true }, // $30.00/M
+        "openai/o1":                   { "disabled": true }, // $26.25/M
+        "openai/gpt-6-astra":          { "disabled": true }, // $20.00/M
+        "anthropic/claude-fable-5":    { "disabled": true }, // $20.00/M
+        "openai/gpt-4-turbo":          { "disabled": true }, // $15.00/M
+        "openai/gpt-5.5":              { "disabled": true }, // $11.25/M
+        "anthropic/claude-opus-4.8":   { "disabled": true }, // $10.00/M
+        "anthropic/claude-opus-4.7":   { "disabled": true }, // $10.00/M
+        "anthropic/claude-opus-4.6":   { "disabled": true }, // $10.00/M
+        "anthropic/claude-opus-4.5":   { "disabled": true }, // $10.00/M
+        "openai/gpt-4o-2024-05-13":    { "disabled": true }, // $7.50/M
+        "anthropic/claude-sonnet-4.6": { "disabled": true }, // $6.00/M
+        "anthropic/claude-sonnet-4.5": { "disabled": true }, // $6.00/M
+        "perplexity/sonar-pro":        { "disabled": true }, // $6.00/M
+        "openai/gpt-5.4":              { "disabled": true }, // $5.63/M
+        "amazon/nova-premier-v1":      { "disabled": true } // $5.00/M
+      }
+    }
+  },
+
+  // Ordered rules, the last match wins. image_generate is denied by default and
+  // set to "ask" on build and build-premium (see guardRules). Agents may not
+  // read the token: OpenCode and the plugin read it themselves.
+  "permissions": [
+    { "action": "image_generate", "resource": "*", "effect": "deny" },
+    { "action": "read", "resource": "*openrouter-token*", "effect": "deny" },
+    { "action": "edit", "resource": "*openrouter-token*", "effect": "deny" },
+    { "action": "edit", "resource": "*.lock", "effect": "deny" },
+    { "action": "edit", "resource": "package-lock.json", "effect": "deny" }
+  ],
+
+  "agents": {
+    "build": {
+      "model": "openrouter/z-ai/glm-5.3-flash", // Coding (Best Budget)
+      "permissions": [
+        { "action": "image_generate", "resource": "*", "effect": "ask" },
+        { "action": "shell", "resource": "*", "effect": "allow" },
+        { "action": "shell", "resource": "*openrouter-token*", "effect": "deny" },
+        { "action": "shell", "resource": "git push*", "effect": "ask" },
+        { "action": "shell", "resource": "git reset --hard*", "effect": "ask" },
+        { "action": "shell", "resource": "rm -rf*", "effect": "ask" }
+      ]
+    },
+    "plan": {
+      "model": "openrouter/z-ai/glm-5.3-flash" // Intelligence (Best Budget)
+    },
+
+    // Opt-in premium primary: in the Tab cycle, but its description and colour
+    // say what it costs. "steps" caps agentic iterations per turn.
+    "build-premium": {
+      "mode": "primary",
+      "model": "openrouter/anthropic/claude-fable-5.1", // Coding (Value)
+      "description": "[$$$] ×263 cost vs. build ($20.00/M). Coding value pick — use only for work build has failed at.",
+      "color": "#ef4444",
+      "steps": 25,
+      "permissions": [
+        { "action": "image_generate", "resource": "*", "effect": "ask" },
+        { "action": "shell", "resource": "*", "effect": "allow" },
+        { "action": "shell", "resource": "*openrouter-token*", "effect": "deny" },
+        { "action": "shell", "resource": "git push*", "effect": "ask" },
+        { "action": "shell", "resource": "git reset --hard*", "effect": "ask" },
+        { "action": "shell", "resource": "rm -rf*", "effect": "ask" }
+      ]
+    },
+
+    // Pinned so they never inherit an expensive caller's model.
+    "general": { "model": "openrouter/z-ai/glm-5.3-flash" }, // Agentic (Best Budget)
+    "explore": { "model": "openrouter/z-ai/glm-5.3-flash" }, // Agentic (Best Budget)
+    "title":   { "model": "openrouter/z-ai/glm-5.3-flash" }  // Intelligence (Best Budget); v1's small_model
+  },
+
+  "commands": {
+    // "/deep <question>" runs one question on the Intelligence value pick as a
+    // subagent, then returns to the cheap session model.
+    "deep": {
+      "description": "[$$] ×53 cost — ask one hard question to Claude Sonnet 5.5 ($4.00/M)",
+      "model": "openrouter/anthropic/claude-sonnet-5.5",
+      "subagent": true,
+      "template": "Think carefully and answer precisely: $ARGUMENTS"
+    },
+
+    // "/image [budget|best] <description> [→ path]" generates one image with the
+    // image_generate plugin tool; OpenCode still asks before the paid call.
+    "image": {
+      "description": "Generate an image (budget: Nano Banana 2 Lite (Gemini 3.1 Flash Lite Image); best: Nano Banana 2 (Gemini 3.1 Flash Image Preview))",
+      "agent": "build",
+      "template": "Generate one image with the image_generate tool. Request: $ARGUMENTS\nIf the request starts with 'budget' or 'best', use that as the tier, otherwise use 'budget'. Use the output path if one is given, otherwise pick a sensible one under the project. Report the saved path and cost."
+    }
+  },
+
+  "compaction": { "auto": true }
+}

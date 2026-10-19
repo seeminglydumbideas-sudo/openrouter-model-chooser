@@ -1,5 +1,6 @@
 import type { OpenRouterModelRaw, ProcessedModel, AxisMetricKey } from '../types/openrouter';
 import snapshotData from '../data/snapshot.json';
+import imageApiModelIds from '../data/imageApiModels.json';
 
 export const PROVIDER_COLORS: Record<string, { bg: string; border: string; hex: string }> = {
   'OpenAI': { bg: 'rgba(16, 185, 129, 0.2)', border: '#10b981', hex: '#10b981' },
@@ -278,26 +279,48 @@ export function processRawModel(raw: OpenRouterModelRaw): ProcessedModel {
   };
 }
 
+// Text-to-Image only counts models OpenRouter's Image API (POST /api/v1/images)
+// actually serves — the generated image plugin calls that API, so a pick it
+// can't run is useless. Models it doesn't serve lose their T2I score (they stay
+// on the other axes); hand-added EXTRA_IMAGE_MODELS it doesn't serve are dropped
+// outright, since they exist here only for the T2I axis. The bundled list
+// (src/data/imageApiModels.json) is the offline fallback.
+function restrictToImageApi(base: ProcessedModel[], imageApiIds: Set<string>): ProcessedModel[] {
+  const baseIds = new Set(base.map(m => m.id));
+  const extras = EXTRA_IMAGE_MODELS.map(processRawModel)
+    .filter(m => !baseIds.has(m.id) && imageApiIds.has(m.id));
+  return [...base, ...extras].map(m =>
+    m.t2iLeaderboardElo !== null && !imageApiIds.has(m.id) ? { ...m, t2iLeaderboardElo: null } : m
+  );
+}
+
 export function getInitialModels(): ProcessedModel[] {
   const base = (snapshotData as OpenRouterModelRaw[]).map(processRawModel);
-  const extra = EXTRA_IMAGE_MODELS.map(processRawModel);
-  const existingIds = new Set(base.map((m: ProcessedModel) => m.id));
-  const newExtras = extra.filter((m: ProcessedModel) => !existingIds.has(m.id));
-  return [...base, ...newExtras];
+  return restrictToImageApi(base, new Set(imageApiModelIds));
+}
+
+async function fetchImageApiModelIds(): Promise<Set<string>> {
+  try {
+    const response = await fetch('https://openrouter.ai/api/v1/images/models');
+    const json = await response.json();
+    if (response.ok && Array.isArray(json.data)) return new Set(json.data.map((m: { id: string }) => m.id));
+  } catch {
+    // fall through to the bundled list
+  }
+  return new Set(imageApiModelIds);
 }
 
 export async function fetchLiveModels(): Promise<ProcessedModel[]> {
-  const response = await fetch('https://openrouter.ai/api/v1/models');
+  const [response, imageApiIds] = await Promise.all([
+    fetch('https://openrouter.ai/api/v1/models'),
+    fetchImageApiModelIds(),
+  ]);
   if (!response.ok) {
     throw new Error(`OpenRouter API error: ${response.statusText}`);
   }
   const json = await response.json();
   if (Array.isArray(json.data)) {
-    const live = json.data.map(processRawModel);
-    const extra = EXTRA_IMAGE_MODELS.map(processRawModel);
-    const liveIds = new Set(live.map((m: ProcessedModel) => m.id));
-    const newExtras = extra.filter((m: ProcessedModel) => !liveIds.has(m.id));
-    return [...live, ...newExtras];
+    return restrictToImageApi(json.data.map(processRawModel), imageApiIds);
   }
   throw new Error('Invalid OpenRouter API format');
 }
@@ -478,8 +501,17 @@ export function findMarginalGainWinners(
 // frontier's own price range: 0 at either extreme, 1 at the exact center, with
 // a floor so it's a handicap, never a disqualification. See "How the Chart
 // Recommends Models" below the catalog table for the full derivation.
+//
+// A steep slope alone is not enough: two models priced 25% apart that differ by
+// 0.6 points produce a large slope from a gain that is likely benchmark noise.
+// So the rebound step itself must also deliver a meaningful share of all the
+// capability available above the Budget Knee (knee → best score on the
+// frontier). Expressed as a share of the axis' own upper-tier range, so it is
+// scale-free across metrics. The 25% value is a judgement call, not a derived
+// constant — see the Methodology tab.
 const VALUE_RECOVERY_RATIO_THRESHOLD = 1.3;
 const VALUE_RECOVERY_BOUNDARY_WEIGHT_FLOOR = 0.15;
+const VALUE_RECOVERY_MIN_STEP_SHARE = 0.25;
 
 export function findValueRecoveryModel(
   paretoModels: ProcessedModel[],
@@ -509,10 +541,13 @@ export function findValueRecoveryModel(
 
   // Marginal rate of return (Y gained per unit of X) for each consecutive step.
   const xPositions = upperTier.map(tx);
+  const yPositions = upperTier.map(ty);
+  const upperTierGain = yPositions[yPositions.length - 1] - yPositions[0];
+  if (upperTierGain <= 0) return null;
   const slopes: number[] = [];
   for (let i = 0; i < upperTier.length - 1; i++) {
     const dx = xPositions[i + 1] - xPositions[i];
-    const dy = ty(upperTier[i + 1]) - ty(upperTier[i]);
+    const dy = yPositions[i + 1] - yPositions[i];
     slopes.push(dx !== 0 ? dy / dx : 0);
   }
 
@@ -536,6 +571,9 @@ export function findValueRecoveryModel(
     if (ratio <= VALUE_RECOVERY_RATIO_THRESHOLD) continue;
 
     const candidateIndex = i + 1;
+    const stepShare = (yPositions[candidateIndex] - yPositions[i]) / upperTierGain;
+    if (stepShare < VALUE_RECOVERY_MIN_STEP_SHARE) continue;
+
     const boundaryDistance = halfRange > 0
       ? Math.min(xPositions[candidateIndex] - rangeStart, rangeEnd - xPositions[candidateIndex]) / halfRange
       : 0;
@@ -549,4 +587,36 @@ export function findValueRecoveryModel(
   }
 
   return recoveryIndex >= 0 ? upperTier[recoveryIndex] : null;
+}
+
+// How much a pick buys over a reference model (normally the Budget Knee), in the
+// axis' own units — shown next to picks so their significance is visible, not
+// just their identity. pointsPerDoubling is the gain per 2× of blended cost.
+export interface PickGain {
+  deltaScore: number;
+  pctGain: number;
+  costMultiple: number;
+  pointsPerDoubling: number;
+}
+
+export function computePickGain(
+  reference: ProcessedModel,
+  pick: ProcessedModel,
+  xKey: AxisMetricKey,
+  yKey: AxisMetricKey
+): PickGain | null {
+  const x0 = getMetricValue(reference, xKey);
+  const x1 = getMetricValue(pick, xKey);
+  const y0 = getMetricValue(reference, yKey);
+  const y1 = getMetricValue(pick, yKey);
+  if (x0 === null || x1 === null || y0 === null || y1 === null || x0 <= 0 || x1 <= x0) return null;
+
+  const deltaScore = y1 - y0;
+  const costMultiple = x1 / x0;
+  return {
+    deltaScore,
+    pctGain: y0 !== 0 ? deltaScore / Math.abs(y0) : 0,
+    costMultiple,
+    pointsPerDoubling: deltaScore / Math.log2(costMultiple),
+  };
 }

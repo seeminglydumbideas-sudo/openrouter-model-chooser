@@ -24,7 +24,13 @@ week. That is why config is generated, not hand-written.
 (`server/history.ts`, hosted by both the Vite dev server and `server/server.ts`, like "Write on disk")
 and stored as `history/YYYY-MM-DD.json.gz` — the raw `/api/v1/models` payload + Image API ids, ~90 KB.
 **At most one record per day:** the server picks the UTC date and a later fetch replaces that day's
-record. `HISTORY_DIR` overrides the directory; `make run` mounts `HISTORY_DIR` (default `./history`,
+record. **Background recording (2026-10-21):** the server also fetches by itself
+(`startHistoryRecorder`, started by both hosts): an hourly check refetches when today's file is
+missing or older than `HISTORY_FETCH_HOURS` (default 12, `0` = off), so history accumulates with no
+tab open — but only while the dev server/container runs. An open page also refetches every 12 h
+(checked every 10 min and on tab focus, since background timers get throttled). Vite re-evaluates
+its config on restart, so the recorder is guarded by a `globalThis` set to avoid stacked timers.
+`HISTORY_DIR` overrides the directory; `make run` mounts `HISTORY_DIR` (default `./history`,
 git-ignored) on `/app/history`. Under the 2D Matrix, `HistoryTimeline.tsx` shows a changes-per-day
 histogram (added / rescored / repriced stacked, removed below the baseline — computed server-side by
 diffing consecutive records) plus a slider and Play; the selected day's record is processed with the

@@ -10,7 +10,8 @@
 // overrides it): { date, fetchedAt, synthetic?, models, imageApiModels }, models
 // being the raw /api/v1/models payload. At most one record per day: a POST
 // replaces today's record (UTC date, chosen server-side — the client never
-// names a file). ~90 KB per day gzipped.
+// names a file). ~90 KB per day gzipped. The server also fetches on its own
+// (startHistoryRecorder), so no open browser tab is needed.
 import type { IncomingMessage, ServerResponse } from 'node:http'
 import fs from 'node:fs/promises'
 import path from 'node:path'
@@ -153,16 +154,74 @@ export async function handleHistory(req: IncomingMessage, res: ServerResponse, d
     return reply(400, { error: 'expected JSON { models: [{ id, … }], imageApiModels: string[] }' })
   }
 
-  const now = new Date()
-  const date = now.toISOString().slice(0, 10)
-  const target = path.join(dir, `${date}.json.gz`)
   try {
-    await fs.mkdir(dir, { recursive: true })
-    const tmp = `${target}.tmp`
-    await fs.writeFile(tmp, encodeRecord({ date, fetchedAt: now.toISOString(), models: models as RawModel[], imageApiModels }))
-    await fs.rename(tmp, target)
-    reply(200, { date, file: target, models: models.length })
+    const { date, file } = await writeToday(dir, models as RawModel[], imageApiModels)
+    reply(200, { date, file, models: models.length })
   } catch (err) {
     reply(500, { error: (err as Error).message })
+  }
+}
+
+// Replaces today's record (UTC date). Temp file + rename: a reader never sees half a file.
+async function writeToday(dir: string, models: RawModel[], imageApiModels: string[]): Promise<{ date: string; file: string }> {
+  const now = new Date()
+  const date = now.toISOString().slice(0, 10)
+  const file = path.join(dir, `${date}.json.gz`)
+  await fs.mkdir(dir, { recursive: true })
+  const tmp = `${file}.tmp`
+  await fs.writeFile(tmp, encodeRecord({ date, fetchedAt: now.toISOString(), models, imageApiModels }))
+  await fs.rename(tmp, file)
+  return { date, file }
+}
+
+// Server-side recorder, so history accumulates while no browser has the page
+// open. Every hour it checks today's record and refetches when it is missing
+// (new UTC day, first start) or older than HISTORY_FETCH_HOURS (default 12, so
+// at least twice a day; 0 disables). Browser visits still save their own fetch.
+const CHECK_MS = 60 * 60 * 1000
+
+export function startHistoryRecorder(dir: string, log: (msg: string) => void = console.log): void {
+  const hours = Number(process.env.HISTORY_FETCH_HOURS ?? 12)
+  if (!(hours > 0)) return
+  // Once per directory per process: Vite re-evaluates its config (and this
+  // module) on restart, so module state alone would stack timers.
+  const started = ((globalThis as { __historyRecorders?: Set<string> }).__historyRecorders ??= new Set())
+  if (started.has(dir)) return
+  started.add(dir)
+  const maxAgeMs = hours * 60 * 60 * 1000
+
+  const check = async () => {
+    const today = path.join(dir, `${new Date().toISOString().slice(0, 10)}.json.gz`)
+    const age = await fs.stat(today).then(st => Date.now() - st.mtimeMs, () => Infinity)
+    if (age < maxAgeMs) return
+    try {
+      const [modelsRes, imagesRes] = await Promise.all([
+        fetch('https://openrouter.ai/api/v1/models', { signal: AbortSignal.timeout(60_000) }),
+        fetch('https://openrouter.ai/api/v1/images/models', { signal: AbortSignal.timeout(60_000) }).catch(() => null),
+      ])
+      if (!modelsRes.ok) throw new Error(`OpenRouter ${modelsRes.status} ${modelsRes.statusText}`)
+      const models = ((await modelsRes.json()) as { data?: unknown }).data
+      if (!Array.isArray(models) || models.length === 0) throw new Error('unexpected /api/v1/models payload')
+      // Without the Image API list, keep the one from the latest record rather than storing none.
+      const images = imagesRes?.ok ? ((await imagesRes.json()) as { data?: unknown }).data : null
+      const imageApiModels: string[] = Array.isArray(images) ? images.map((m: { id: string }) => m.id) : await latestImageApiModels(dir)
+      const { file } = await writeToday(dir, models, imageApiModels)
+      log(`[history] recorded ${models.length} models → ${file}`)
+    } catch (err) {
+      log(`[history] fetch failed, retrying within the hour: ${(err as Error).message}`)
+    }
+  }
+
+  void check()
+  setInterval(() => void check(), CHECK_MS).unref()
+}
+
+async function latestImageApiModels(dir: string): Promise<string[]> {
+  const latest = (await fs.readdir(dir).catch(() => [] as string[])).filter(n => FILE_RE.test(n)).sort().at(-1)
+  if (!latest) return []
+  try {
+    return (JSON.parse(gunzipSync(await fs.readFile(path.join(dir, latest))).toString('utf8')) as HistoryRecord).imageApiModels
+  } catch {
+    return []
   }
 }

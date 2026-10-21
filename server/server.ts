@@ -5,7 +5,7 @@ import http from 'node:http'
 import fs from 'node:fs/promises'
 import path from 'node:path'
 import { WRITE_CONFIG_ROUTE, handleWriteConfig, resolveOutputDir } from './writeConfig.ts'
-import { HISTORY_ROUTE, handleHistory, resolveHistoryDir } from './history.ts'
+import { HISTORY_ROUTE, handleHistory, resolveHistoryDir, startHistoryRecorder } from './history.ts'
 
 const root = process.cwd()
 const distDir = path.resolve(root, 'dist')
@@ -63,6 +63,7 @@ const server = http.createServer((req, res) => {
   void serveStatic(urlPath, res)
 }).listen(port, () => {
   console.log(`Serving ${distDir} on http://0.0.0.0:${port} — writes into: ${outputDir}, history: ${historyDir}`)
+  startHistoryRecorder(historyDir)
 })
 
 // As the container's PID 1, Node gets no default SIGTERM/SIGINT handling, so

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { Header } from './components/Header';
 import { PresetBar } from './components/PresetBar';
 import type { PresetConfig } from './components/PresetBar';
@@ -10,6 +10,8 @@ import { ModelDetailModal } from './components/ModelDetailModal';
 import type { ProcessedModel, AxisMetricKey } from './types/openrouter';
 import { getInitialModels, fetchLiveSnapshot, processSnapshot } from './services/modelService';
 import { fetchHistoryIndex, saveSnapshot, forgetDay, type DaySummary } from './services/history';
+
+const AUTO_REFRESH_MS = 12 * 60 * 60 * 1000;
 
 export default function App() {
   const [models, setModels] = useState<ProcessedModel[]>(() => getInitialModels());
@@ -35,8 +37,11 @@ export default function App() {
   const [filterMultimodalOnly, setFilterMultimodalOnly] = useState<boolean>(false);
   const [filterImageOutputOnly, setFilterImageOutputOnly] = useState<boolean>(false);
 
+  const lastFetchRef = useRef(0);
+
   // Live fetch on load
   const loadLiveModels = useCallback(async () => {
+    lastFetchRef.current = Date.now();
     setIsLoading(true);
     try {
       const snapshot = await fetchLiveSnapshot();
@@ -58,6 +63,21 @@ export default function App() {
 
   useEffect(() => {
     loadLiveModels();
+  }, [loadLiveModels]);
+
+  // A page left open refetches at least twice a day (each fetch also lands in
+  // the history). Checked periodically and on return to the tab, because
+  // browsers throttle background timers and a sleeping machine skips them.
+  useEffect(() => {
+    const refreshIfStale = () => {
+      if (Date.now() - lastFetchRef.current >= AUTO_REFRESH_MS) void loadLiveModels();
+    };
+    const timer = setInterval(refreshIfStale, 10 * 60 * 1000);
+    document.addEventListener('visibilitychange', refreshIfStale);
+    return () => {
+      clearInterval(timer);
+      document.removeEventListener('visibilitychange', refreshIfStale);
+    };
   }, [loadLiveModels]);
 
   const handleApplyPreset = (preset: PresetConfig) => {

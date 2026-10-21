@@ -8,6 +8,9 @@ OPENCODE_DIR ?= $(CURDIR)/.opencode
 # Host directory for the daily OpenRouter snapshots (one .json.gz per day)
 # behind the 2D Matrix timeline.
 HISTORY_DIR ?= $(CURDIR)/history
+# The server refetches when today's snapshot is older than this (0 = only
+# when a browser loads the page).
+HISTORY_FETCH_HOURS ?= 12
 
 # Detect container tool (defaults to docker if available, else podman)
 DOCKER_ENGINE ?= $(shell which docker 2>/dev/null || which podman 2>/dev/null || echo docker)
@@ -43,7 +46,7 @@ run:
 	@mkdir -p $(OPENCODE_DIR) $(HISTORY_DIR)
 	@echo "Starting container '$(CONTAINER_NAME)' using $(PODMAN_ENGINE) on http://localhost:$(PORT)..."
 	$(PODMAN_ENGINE) run -d --rm --name $(CONTAINER_NAME) -p $(PORT):8080 $(USER_FLAGS) \
-		-v $(OPENCODE_DIR):/app/.opencode:Z -v $(HISTORY_DIR):/app/history:Z -e OPENCODE_DIR_HOST=$(OPENCODE_DIR) $(IMAGE_NAME)
+		-v $(OPENCODE_DIR):/app/.opencode:Z -v $(HISTORY_DIR):/app/history:Z -e HISTORY_FETCH_HOURS=$(HISTORY_FETCH_HOURS) -e OPENCODE_DIR_HOST=$(OPENCODE_DIR) $(IMAGE_NAME)
 	@echo "Dashboard active at: http://localhost:$(PORT)"
 
 stop:

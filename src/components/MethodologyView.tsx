@@ -403,6 +403,23 @@ hidden = blended cost ≥ $5/M, has a benchmark score, on no text axis' frontier
         </p>
       </Section>
 
+      <Section icon={<Sigma className="h-4.5 w-4.5 text-slate-400" />} title="6. VRAM bubble size (open-weight models)">
+        <p>
+          The "VRAM" bubble size shows roughly how much GPU memory a model needs to run locally. It only exists for
+          models with downloadable weights: OpenRouter's <code className="text-cyan-300">hugging_face_id</code> names the
+          repo, and the parameter count comes from that repo's safetensors metadata on the Hugging Face Hub (bundled in{' '}
+          <code className="text-cyan-300">src/data/hfModels.json</code>, refreshed with <code className="text-cyan-300">make hf-params</code>).
+          When the Hub has no count, a size in the model id is used ("…-70b", "8x22b"). Everything else is grayed out.
+        </p>
+        <Formula>{`VRAM ≈ params × bits per weight / 8 × 1.2      # 1.2 = KV cache at modest context + runtime overhead
+bubble = log₂(VRAM at 4-bit + 1)`}</Formula>
+        <Callout tone="warn">
+          Indicative only. A mixture-of-experts model counts all its parameters, since every expert must be in memory,
+          not just the active ones. Long contexts need much more memory for the KV cache. Names can mislead
+          (an "8x22B" shares layers and is smaller than 176B).
+        </Callout>
+      </Section>
+
       {/* Glossary */}
       <Section icon={<ScrollText className="h-4.5 w-4.5 text-slate-400" />} title="Glossary of math concepts used">
         <ul className="flex flex-col gap-2.5 list-disc pl-5 marker:text-slate-600">

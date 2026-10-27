@@ -67,7 +67,11 @@ const server = http.createServer((req, res) => {
 })
 
 // As the container's PID 1, Node gets no default SIGTERM/SIGINT handling, so
-// `podman stop` would wait 10 s and then kill it.
+// `podman stop` would wait 10 s and then kill it. close() alone also waits for
+// idle keep-alive connections (an open tab holds some), so drop those too.
 for (const signal of ['SIGTERM', 'SIGINT'] as const) {
-  process.on(signal, () => server.close(() => process.exit(0)))
+  process.on(signal, () => {
+    server.close(() => process.exit(0))
+    server.closeAllConnections()
+  })
 }

@@ -1,0 +1,1004 @@
+{
+ "anthracite-org/magnum-v4-72b": {
+  "params": 72706203648,
+  "weightBytes": 145412407296,
+  "gated": false,
+  "license": "apache-2.0"
+ },
+ "arcee-ai/Trinity-Large-Thinking": {
+  "params": 398635286016,
+  "weightBytes": 797270599680,
+  "gated": false,
+  "license": "other"
+ },
+ "baidu/ERNIE-4.5-VL-424B-A47B-PT": {
+  "params": 423526285184,
+  "weightBytes": 847159538176,
+  "gated": false,
+  "license": "apache-2.0"
+ },
+ "ByteDance-Seed/UI-TARS-1.5-7B": {
+  "params": 8292166656,
+  "weightBytes": 33168666624,
+  "gated": false,
+  "license": "apache-2.0"
+ },
+ "cognitivecomputations/Dolphin-Mistral-24B-Venice-Edition": {
+  "params": 24011361280,
+  "weightBytes": 48022722560,
+  "gated": false,
+  "license": "apache-2.0"
+ },
+ "CohereForAI/c4ai-command-a-03-2025": {
+  "params": 111057580032,
+  "weightBytes": 222115160064,
+  "gated": true,
+  "license": "cc-by-nc-4.0"
+ },
+ "CohereLabs/North-Mini-Code-1.0": {
+  "params": 30484303872,
+  "weightBytes": 60968607744,
+  "gated": false,
+  "license": "apache-2.0"
+ },
+ "deepseek-ai/DeepSeek-R1": {
+  "params": 684489845504,
+  "weightBytes": 688408677376,
+  "gated": false,
+  "license": "mit"
+ },
+ "deepseek-ai/DeepSeek-R1-0528": {
+  "params": 684531386000,
+  "weightBytes": 688574839360,
+  "gated": false,
+  "license": "mit"
+ },
+ "deepseek-ai/DeepSeek-R1-Distill-Llama-70B": {
+  "params": 70553706496,
+  "weightBytes": 141107412992,
+  "gated": false,
+  "license": "mit"
+ },
+ "deepseek-ai/DeepSeek-V3": {
+  "params": 684489845504,
+  "weightBytes": 688408677376,
+  "gated": false,
+  "license": null
+ },
+ "deepseek-ai/DeepSeek-V3-0324": {
+  "params": 684531386000,
+  "weightBytes": 688574839360,
+  "gated": false,
+  "license": "mit"
+ },
+ "deepseek-ai/DeepSeek-V3.1": {
+  "params": 684531386000,
+  "weightBytes": 688574839360,
+  "gated": false,
+  "license": "mit"
+ },
+ "deepseek-ai/DeepSeek-V3.1-Terminus": {
+  "params": 684531386000,
+  "weightBytes": 688576928320,
+  "gated": false,
+  "license": "mit"
+ },
+ "deepseek-ai/DeepSeek-V3.2": {
+  "params": 685355329792,
+  "weightBytes": 689304740864,
+  "gated": false,
+  "license": "mit"
+ },
+ "deepseek-ai/DeepSeek-V3.2-Exp": {
+  "params": 685396921376,
+  "weightBytes": 689471107200,
+  "gated": false,
+  "license": "mit"
+ },
+ "deepseek-ai/DeepSeek-V4-Flash": {
+  "params": 290944616402,
+  "weightBytes": 292484669000,
+  "gated": false,
+  "license": "mit"
+ },
+ "deepseek-ai/DeepSeek-V4-Flash-0731": {
+  "params": 304180418494,
+  "weightBytes": 305793500152,
+  "gated": false,
+  "license": "mit"
+ },
+ "deepseek-ai/DeepSeek-V4-Flash-Vision-Exp": {
+  "params": 304646824126,
+  "weightBytes": 306726336504,
+  "gated": false,
+  "license": "mit"
+ },
+ "deepseek-ai/DeepSeek-V4-Pro": {
+  "params": 1598839674782,
+  "weightBytes": 1601936192632,
+  "gated": false,
+  "license": "mit"
+ },
+ "deepseek-ai/DeepSeek-V4-Pro-0813": {
+  "params": 1650497936906,
+  "weightBytes": 1653740636712,
+  "gated": false,
+  "license": "mit"
+ },
+ "deepseek-ai/DeepSeek-V4.1-Flash": {
+  "params": 763205315794,
+  "weightBytes": 765308679496,
+  "gated": false,
+  "license": "mit"
+ },
+ "deepseek-ai/DeepSeek-V4.1-Flash-1017": {
+  "params": 763205315794,
+  "weightBytes": 765308679496,
+  "gated": false,
+  "license": "mit"
+ },
+ "google/gemma-2-27b-it": {
+  "params": 27227128320,
+  "weightBytes": 54454256640,
+  "gated": true,
+  "license": "gemma"
+ },
+ "google/gemma-3-12b-it": {
+  "params": 12187325040,
+  "weightBytes": 24374650080,
+  "gated": true,
+  "license": "gemma"
+ },
+ "google/gemma-3-27b-it": {
+  "params": 27432406640,
+  "weightBytes": 54864813280,
+  "gated": true,
+  "license": "gemma"
+ },
+ "google/gemma-3-4b-it": {
+  "params": 4300079472,
+  "weightBytes": 8600158944,
+  "gated": true,
+  "license": "gemma"
+ },
+ "google/gemma-4-26B-A4B-it": {
+  "params": 25805936206,
+  "weightBytes": 51611872412,
+  "gated": false,
+  "license": "apache-2.0"
+ },
+ "google/gemma-4-31B-it": {
+  "params": 31273088876,
+  "weightBytes": 62546177752,
+  "gated": false,
+  "license": "apache-2.0"
+ },
+ "Gryphe/MythoMax-L2-13b": {
+  "params": null,
+  "weightBytes": null,
+  "gated": false,
+  "license": "other"
+ },
+ "ibm-granite/granite-4.0-h-micro": {
+  "params": 3191396096,
+  "weightBytes": 6382792192,
+  "gated": false,
+  "license": "apache-2.0"
+ },
+ "ibm-granite/granite-4.2-8b": {
+  "params": 8791592960,
+  "weightBytes": 17583185920,
+  "gated": false,
+  "license": "apache-2.0"
+ },
+ "inclusionAI/Ling-3.0-flash": {
+  "params": 127486405600,
+  "weightBytes": 254973142144,
+  "gated": false,
+  "license": "mit"
+ },
+ "inclusionAI/Ling-3.0-flash-VL": {
+  "params": 124848460496,
+  "weightBytes": 249697250912,
+  "gated": false,
+  "license": "mit"
+ },
+ "LiquidAI/LFM2.5-2.6B": {
+  "params": 2697198592,
+  "weightBytes": 5394397184,
+  "gated": false,
+  "license": "other"
+ },
+ "LiquidAI/LFM2.5-24B-A2B": {
+  "params": 23971585280,
+  "weightBytes": 47943180288,
+  "gated": false,
+  "license": "other"
+ },
+ "meituan-longcat/LongCat-2.0": {
+  "params": 1775560491136,
+  "weightBytes": 3551699340032,
+  "gated": false,
+  "license": "mit"
+ },
+ "meta-llama/Llama-3.2-1B-Instruct": {
+  "params": 1235814400,
+  "weightBytes": 2471628800,
+  "gated": true,
+  "license": "llama3.2"
+ },
+ "meta-llama/Llama-3.2-3B-Instruct": {
+  "params": 3212749824,
+  "weightBytes": 6425499648,
+  "gated": true,
+  "license": "llama3.2"
+ },
+ "meta-llama/Llama-3.3-70B-Instruct": {
+  "params": 70553706496,
+  "weightBytes": 141107412992,
+  "gated": true,
+  "license": "llama3.3"
+ },
+ "meta-llama/Llama-4-Maverick-17B-128E-Instruct": {
+  "params": 401583781376,
+  "weightBytes": 803167562752,
+  "gated": true,
+  "license": "other"
+ },
+ "meta-llama/Llama-4-Scout-17B-16E-Instruct": {
+  "params": 108641793536,
+  "weightBytes": 217283587072,
+  "gated": true,
+  "license": "other"
+ },
+ "meta-llama/Llama-Guard-4-12B": {
+  "params": 12001097216,
+  "weightBytes": 24002194432,
+  "gated": true,
+  "license": "other"
+ },
+ "meta-llama/Meta-Llama-3.1-70B-Instruct": {
+  "params": 70553706496,
+  "weightBytes": 141107412992,
+  "gated": true,
+  "license": "llama3.1"
+ },
+ "meta-llama/Meta-Llama-3.1-8B-Instruct": {
+  "params": 8030261248,
+  "weightBytes": 16060522496,
+  "gated": true,
+  "license": "llama3.1"
+ },
+ "meta-models/Muse-Glimmer-30B": {
+  "params": 29776626688,
+  "weightBytes": 59553253376,
+  "gated": false,
+  "license": "apache-2.0"
+ },
+ "meta-models/Muse-Spark-Open-816B-A42B": {
+  "params": 822036529664,
+  "weightBytes": 1644333137920,
+  "gated": true,
+  "license": "other"
+ },
+ "microsoft/phi-4": {
+  "params": 14659507200,
+  "weightBytes": 29319014400,
+  "gated": false,
+  "license": "mit"
+ },
+ "MiniMaxAI/MiniMax-M2": {
+  "params": 228689764864,
+  "weightBytes": 230066110464,
+  "gated": false,
+  "license": "other"
+ },
+ "MiniMaxAI/MiniMax-M2.1": {
+  "params": 228689764864,
+  "weightBytes": 230066110464,
+  "gated": false,
+  "license": "other"
+ },
+ "MiniMaxAI/MiniMax-M2.5": {
+  "params": 228689764864,
+  "weightBytes": 230066110464,
+  "gated": false,
+  "license": "other"
+ },
+ "MiniMaxAI/MiniMax-M2.7": {
+  "params": 228689764864,
+  "weightBytes": 230066110464,
+  "gated": false,
+  "license": "other"
+ },
+ "MiniMaxAI/Minimax-M3": {
+  "params": 427040140160,
+  "weightBytes": 854172958720,
+  "gated": false,
+  "license": "other"
+ },
+ "MiniMaxAI/MiniMax-M3.1-Flash": {
+  "params": 220490854016,
+  "weightBytes": 223953094144,
+  "gated": false,
+  "license": "other"
+ },
+ "MiniMaxAI/MiniMax-Text-01": {
+  "params": 456089655296,
+  "weightBytes": 914669154304,
+  "gated": false,
+  "license": null
+ },
+ "mistralai/Devstral-2-123B-Instruct-2512": {
+  "params": 125025989840,
+  "weightBytes": 128249389056,
+  "gated": false,
+  "license": "other"
+ },
+ "mistralai/Ministral-3-14B-Instruct-2512": {
+  "params": 13945032240,
+  "weightBytes": 15726581760,
+  "gated": false,
+  "license": "apache-2.0"
+ },
+ "mistralai/Ministral-3-3B-Instruct-2512": {
+  "params": 3849090048,
+  "weightBytes": 4671989760,
+  "gated": false,
+  "license": "apache-2.0"
+ },
+ "mistralai/Ministral-3-8B-Instruct-2512": {
+  "params": 8918026716,
+  "weightBytes": 10420523008,
+  "gated": false,
+  "license": "apache-2.0"
+ },
+ "mistralai/Mistral-Nemo-Instruct-2407": {
+  "params": 12247782400,
+  "weightBytes": 24495564800,
+  "gated": false,
+  "license": "apache-2.0"
+ },
+ "mistralai/Mistral-Small-24B-Instruct-2501": {
+  "params": 23572403200,
+  "weightBytes": 47144806400,
+  "gated": false,
+  "license": "apache-2.0"
+ },
+ "mistralai/Mistral-Small-3.1-24B-Instruct-2503": {
+  "params": 24011361280,
+  "weightBytes": 48022722560,
+  "gated": false,
+  "license": "apache-2.0"
+ },
+ "mistralai/Mistral-Small-3.2-24B-Instruct-2506": {
+  "params": 24011361280,
+  "weightBytes": 48022722560,
+  "gated": false,
+  "license": "apache-2.0"
+ },
+ "mistralai/Mistral-Small-4-119B-2603": {
+  "params": 119401317376,
+  "weightBytes": 120922769408,
+  "gated": false,
+  "license": "apache-2.0"
+ },
+ "mistralai/Mixtral-8x22B-Instruct-v0.1": {
+  "params": 140630071296,
+  "weightBytes": 281260142592,
+  "gated": false,
+  "license": "apache-2.0"
+ },
+ "mistralai/Voxtral-Small-24B-2507": {
+  "params": 24261800960,
+  "weightBytes": 48527441920,
+  "gated": false,
+  "license": "apache-2.0"
+ },
+ "moondream/moondream3-preview": {
+  "params": 9268626928,
+  "weightBytes": 18537253856,
+  "gated": false,
+  "license": "other"
+ },
+ "moondream/moondream3.1-9B-A2B": {
+  "params": 9273869808,
+  "weightBytes": 10505161696,
+  "gated": false,
+  "license": "other"
+ },
+ "moonshotai/Kimi-K2-Instruct": {
+  "params": 1026408235864,
+  "weightBytes": 1028923275952,
+  "gated": false,
+  "license": "other"
+ },
+ "moonshotai/Kimi-K2-Instruct-0905": {
+  "params": 1026408240256,
+  "weightBytes": 1028923284736,
+  "gated": false,
+  "license": "other"
+ },
+ "moonshotai/Kimi-K2-Thinking": {
+  "params": 1026408240256,
+  "weightBytes": 4082188573952,
+  "gated": false,
+  "license": "other"
+ },
+ "moonshotai/Kimi-K2.5": {
+  "params": 1026879376368,
+  "weightBytes": 4083130846176,
+  "gated": false,
+  "license": "other"
+ },
+ "moonshotai/Kimi-K2.6": {
+  "params": 1026879376368,
+  "weightBytes": 4083130846176,
+  "gated": false,
+  "license": "other"
+ },
+ "moonshotai/Kimi-K2.7-Code": {
+  "params": 1026879376368,
+  "weightBytes": 4083130846176,
+  "gated": false,
+  "license": "other"
+ },
+ "moonshotai/Kimi-K3": {
+  "params": 2779931837184,
+  "weightBytes": 2837145089024,
+  "gated": false,
+  "license": "other"
+ },
+ "nex-agi/Nex-N2.5-mini": {
+  "params": 35107181936,
+  "weightBytes": 70214363872,
+  "gated": false,
+  "license": "apache-2.0"
+ },
+ "nex-agi/Nex-N2.5-Pro": {
+  "params": 396802360816,
+  "weightBytes": 407057664992,
+  "gated": false,
+  "license": "apache-2.0"
+ },
+ "NousResearch/Hermes-3-Llama-3.1-405B": {
+  "params": 405853388800,
+  "weightBytes": 811706777600,
+  "gated": false,
+  "license": "llama3"
+ },
+ "NousResearch/Hermes-3-Llama-3.1-70B": {
+  "params": 70553706496,
+  "weightBytes": 141107412992,
+  "gated": false,
+  "license": "llama3"
+ },
+ "NousResearch/Hermes-4-405B": {
+  "params": 405853388800,
+  "weightBytes": 811706777600,
+  "gated": false,
+  "license": "llama3"
+ },
+ "nvidia/Nemotron-3-Nano-Omni-30B-A3B-Reasoning-BF16": {
+  "params": 33015632214,
+  "weightBytes": 66031270328,
+  "gated": false,
+  "license": "other"
+ },
+ "nvidia/Nemotron-3.5-Content-Safety": {
+  "params": 4300079472,
+  "weightBytes": 8600158944,
+  "gated": false,
+  "license": "other"
+ },
+ "nvidia/NVIDIA-Nemotron-3-Nano-30B-A3B-BF16": {
+  "params": 31577937344,
+  "weightBytes": 63155892352,
+  "gated": false,
+  "license": "other"
+ },
+ "nvidia/NVIDIA-Nemotron-3-Super-120B-A12B-FP8": {
+  "params": 123611012096,
+  "weightBytes": 128334561280,
+  "gated": false,
+  "license": "other"
+ },
+ "nvidia/NVIDIA-Nemotron-3-Ultra-550B-A55B-BF16": {
+  "params": 560524578816,
+  "weightBytes": 1121049257984,
+  "gated": false,
+  "license": "other"
+ },
+ "nvidia/NVIDIA-Nemotron-3.5-Lightning-30B-A3B-BF16": {
+  "params": 31577937344,
+  "weightBytes": 65826538624,
+  "gated": false,
+  "license": "other"
+ },
+ "openai/gpt-oss-120b": {
+  "params": 116829156672,
+  "weightBytes": 118996527744,
+  "gated": false,
+  "license": "apache-2.0"
+ },
+ "openai/gpt-oss-20b": {
+  "params": 20914757184,
+  "weightBytes": 22719216768,
+  "gated": false,
+  "license": "apache-2.0"
+ },
+ "openai/gpt-oss-safeguard-20b": {
+  "params": 21511953984,
+  "weightBytes": 23316413568,
+  "gated": false,
+  "license": "apache-2.0"
+ },
+ "poolside/Laguna-S-2.1": {
+  "params": 117561977600,
+  "weightBytes": 235123955200,
+  "gated": false,
+  "license": "openmdw-1.1"
+ },
+ "poolside/Laguna-XS-2.1": {
+  "params": 33442617088,
+  "weightBytes": 66885234176,
+  "gated": false,
+  "license": "openmdw-1.1"
+ },
+ "prism-ml/Ternary-Bonsai-2-27B-gguf": {
+  "params": null,
+  "weightBytes": null,
+  "gated": false,
+  "license": "apache-2.0"
+ },
+ "Qwen/Qwen2.5-72B-Instruct": {
+  "params": 72706203648,
+  "weightBytes": 145412407296,
+  "gated": false,
+  "license": "other"
+ },
+ "Qwen/Qwen2.5-7B-Instruct": {
+  "params": 7615616512,
+  "weightBytes": 15231233024,
+  "gated": false,
+  "license": "apache-2.0"
+ },
+ "Qwen/Qwen2.5-Coder-32B-Instruct": {
+  "params": 32763876352,
+  "weightBytes": 65527752704,
+  "gated": false,
+  "license": "apache-2.0"
+ },
+ "Qwen/Qwen2.5-VL-72B-Instruct": {
+  "params": 73410777344,
+  "weightBytes": 146821554688,
+  "gated": false,
+  "license": "other"
+ },
+ "Qwen/Qwen3-14B": {
+  "params": 14768307200,
+  "weightBytes": 29536614400,
+  "gated": false,
+  "license": "apache-2.0"
+ },
+ "Qwen/Qwen3-235B-A22B": {
+  "params": 235093634560,
+  "weightBytes": 470187269120,
+  "gated": false,
+  "license": "apache-2.0"
+ },
+ "Qwen/Qwen3-235B-A22B-Instruct-2507": {
+  "params": 235093634560,
+  "weightBytes": 470187269120,
+  "gated": false,
+  "license": "apache-2.0"
+ },
+ "Qwen/Qwen3-235B-A22B-Thinking-2507": {
+  "params": 235093634560,
+  "weightBytes": 470187269120,
+  "gated": false,
+  "license": "apache-2.0"
+ },
+ "Qwen/Qwen3-30B-A3B": {
+  "params": 30532122624,
+  "weightBytes": 61064245248,
+  "gated": false,
+  "license": "apache-2.0"
+ },
+ "Qwen/Qwen3-30B-A3B-Instruct-2507": {
+  "params": 30532122624,
+  "weightBytes": 61064245248,
+  "gated": false,
+  "license": "apache-2.0"
+ },
+ "Qwen/Qwen3-30B-A3B-Thinking-2507": {
+  "params": 30532122624,
+  "weightBytes": 61064245248,
+  "gated": false,
+  "license": "apache-2.0"
+ },
+ "Qwen/Qwen3-32B": {
+  "params": 32762123264,
+  "weightBytes": 65524246528,
+  "gated": false,
+  "license": "apache-2.0"
+ },
+ "Qwen/Qwen3-8B": {
+  "params": 8190735360,
+  "weightBytes": 16381470720,
+  "gated": false,
+  "license": "apache-2.0"
+ },
+ "Qwen/Qwen3-Coder-30B-A3B-Instruct": {
+  "params": 30532122624,
+  "weightBytes": 61064245248,
+  "gated": false,
+  "license": "apache-2.0"
+ },
+ "Qwen/Qwen3-Coder-480B-A35B-Instruct": {
+  "params": 480154875392,
+  "weightBytes": 960309750784,
+  "gated": false,
+  "license": "apache-2.0"
+ },
+ "Qwen/Qwen3-Coder-Next": {
+  "params": 79674391296,
+  "weightBytes": 159348782592,
+  "gated": false,
+  "license": "apache-2.0"
+ },
+ "Qwen/Qwen3-Next-80B-A3B-Instruct": {
+  "params": 81324862720,
+  "weightBytes": 162649725440,
+  "gated": false,
+  "license": "apache-2.0"
+ },
+ "Qwen/Qwen3-Next-80B-A3B-Thinking": {
+  "params": 81324862720,
+  "weightBytes": 162649725440,
+  "gated": false,
+  "license": "apache-2.0"
+ },
+ "Qwen/Qwen3-VL-235B-A22B-Instruct": {
+  "params": 235670022896,
+  "weightBytes": 471340045792,
+  "gated": false,
+  "license": "apache-2.0"
+ },
+ "Qwen/Qwen3-VL-235B-A22B-Thinking": {
+  "params": 235670022896,
+  "weightBytes": 471340045792,
+  "gated": false,
+  "license": "apache-2.0"
+ },
+ "Qwen/Qwen3-VL-30B-A3B-Instruct": {
+  "params": 31070754032,
+  "weightBytes": 62141508064,
+  "gated": false,
+  "license": "apache-2.0"
+ },
+ "Qwen/Qwen3-VL-30B-A3B-Thinking": {
+  "params": 31070754032,
+  "weightBytes": 62141508064,
+  "gated": false,
+  "license": "apache-2.0"
+ },
+ "Qwen/Qwen3-VL-32B-Instruct": {
+  "params": 33357390064,
+  "weightBytes": 66714780128,
+  "gated": false,
+  "license": "apache-2.0"
+ },
+ "Qwen/Qwen3-VL-8B-Instruct": {
+  "params": 8767123696,
+  "weightBytes": 17534247392,
+  "gated": false,
+  "license": "apache-2.0"
+ },
+ "Qwen/Qwen3-VL-8B-Thinking": {
+  "params": 8767123696,
+  "weightBytes": 17534247392,
+  "gated": false,
+  "license": "apache-2.0"
+ },
+ "Qwen/Qwen3.5-122B-A10B": {
+  "params": 125086497008,
+  "weightBytes": 250173007840,
+  "gated": false,
+  "license": "apache-2.0"
+ },
+ "Qwen/Qwen3.5-27B": {
+  "params": 27781427952,
+  "weightBytes": 55562872800,
+  "gated": false,
+  "license": "apache-2.0"
+ },
+ "Qwen/Qwen3.5-35B-A3B": {
+  "params": 35951822704,
+  "weightBytes": 71903655008,
+  "gated": false,
+  "license": "apache-2.0"
+ },
+ "Qwen/Qwen3.5-397B-A17B": {
+  "params": 403397928944,
+  "weightBytes": 806795875168,
+  "gated": false,
+  "license": "apache-2.0"
+ },
+ "Qwen/Qwen3.5-9B": {
+  "params": 9653104368,
+  "weightBytes": 19306216416,
+  "gated": false,
+  "license": "apache-2.0"
+ },
+ "Qwen/Qwen3.6-27B": {
+  "params": 27781427952,
+  "weightBytes": 55562855904,
+  "gated": false,
+  "license": "apache-2.0"
+ },
+ "Qwen/Qwen3.6-35B-A3B": {
+  "params": 35951822704,
+  "weightBytes": 71903645408,
+  "gated": false,
+  "license": "apache-2.0"
+ },
+ "Qwen/Qwen3.8-2.4T-A95B": {
+  "params": 2446182725504,
+  "weightBytes": 4892365451008,
+  "gated": false,
+  "license": "other"
+ },
+ "Qwen/Qwen3.8-27B": {
+  "params": 27781427952,
+  "weightBytes": 55562855904,
+  "gated": false,
+  "license": "apache-2.0"
+ },
+ "Qwen/Qwen3.8-Flash-Next": {
+  "params": 179999981459,
+  "weightBytes": 359999963128,
+  "gated": false,
+  "license": "other"
+ },
+ "RecursiveSI/flint": {
+  "params": 39785287456,
+  "weightBytes": 79570574912,
+  "gated": false,
+  "license": "apache-2.0"
+ },
+ "reflection/Beam-1.0-501B-A23B": {
+  "params": 501267612352,
+  "weightBytes": 1002663700352,
+  "gated": false,
+  "license": "apache-2.0"
+ },
+ "RekaAI/reka-edge-2603": {
+  "params": 7128509568,
+  "weightBytes": 14257019136,
+  "gated": false,
+  "license": "other"
+ },
+ "RekaAI/reka-flash-3": {
+  "params": 20905482240,
+  "weightBytes": 41810964480,
+  "gated": false,
+  "license": "apache-2.0"
+ },
+ "Sao10K/L3-8B-Lunaris-v1": {
+  "params": 8030261248,
+  "weightBytes": 16060522496,
+  "gated": false,
+  "license": "llama3"
+ },
+ "Sao10K/L3.1-70B-Euryale-v2.2": {
+  "params": null,
+  "weightBytes": null,
+  "gated": false,
+  "license": "cc-by-nc-4.0"
+ },
+ "Sao10K/L3.3-70B-Euryale-v2.3": {
+  "params": 70553706496,
+  "weightBytes": 141107412992,
+  "gated": false,
+  "license": "llama3"
+ },
+ "stepfun-ai/Step-3.5-Flash": {
+  "params": 199384301376,
+  "weightBytes": 398768626944,
+  "gated": false,
+  "license": "apache-2.0"
+ },
+ "stepfun-ai/Step-3.7-Flash": {
+  "params": 201365316160,
+  "weightBytes": 402730656512,
+  "gated": false,
+  "license": "apache-2.0"
+ },
+ "stepfun-ai/Step-5-Preview": {
+  "params": 604339504832,
+  "weightBytes": 643962787072,
+  "gated": false,
+  "license": "other"
+ },
+ "tencent/Hunyuan-A13B-Instruct": {
+  "params": 80393183232,
+  "weightBytes": 160803143680,
+  "gated": false,
+  "license": "other"
+ },
+ "tencent/Hy-MT2-1.8B": {
+  "params": 2038515712,
+  "weightBytes": 4077031424,
+  "gated": false,
+  "license": "apache-2.0"
+ },
+ "tencent/Hy-MT2-30B-A3B": {
+  "params": 30064725888,
+  "weightBytes": 60129463808,
+  "gated": false,
+  "license": "apache-2.0"
+ },
+ "tencent/Hy-MT2-7B": {
+  "params": 8029540352,
+  "weightBytes": 16059080704,
+  "gated": false,
+  "license": "apache-2.0"
+ },
+ "tencent/Hy3": {
+  "params": 298786155776,
+  "weightBytes": 597572342272,
+  "gated": false,
+  "license": "apache-2.0"
+ },
+ "tencent/Hy3-preview": {
+  "params": 298786155776,
+  "weightBytes": 597572342272,
+  "gated": false,
+  "license": "other"
+ },
+ "tencent/Hy4-preview": {
+  "params": 779960992733,
+  "weightBytes": 1559983576308,
+  "gated": false,
+  "license": "apache-2.0"
+ },
+ "thedrummer/cydonia-24b-v4.1": {
+  "params": 23572403200,
+  "weightBytes": 47144806400,
+  "gated": false,
+  "license": null
+ },
+ "TheDrummer/Skyfall-36B-v2": {
+  "params": 36910535680,
+  "weightBytes": 73821071360,
+  "gated": false,
+  "license": "other"
+ },
+ "TheDrummer/UnslopNemo-12B-v4.1": {
+  "params": 12247782400,
+  "weightBytes": 24495564800,
+  "gated": false,
+  "license": null
+ },
+ "thinkingmachines/Inkling": {
+  "params": 952377623626,
+  "weightBytes": 1904755280148,
+  "gated": false,
+  "license": "apache-2.0"
+ },
+ "thinkingmachines/Inkling-Small": {
+  "params": 265956439090,
+  "weightBytes": 531912898740,
+  "gated": false,
+  "license": "apache-2.0"
+ },
+ "Undi95/ReMM-SLERP-L2-13B": {
+  "params": null,
+  "weightBytes": null,
+  "gated": false,
+  "license": "cc-by-nc-4.0"
+ },
+ "XiaomiMiMo/MiMo-V2.5": {
+  "params": 310756322688,
+  "weightBytes": 314956232960,
+  "gated": false,
+  "license": "mit"
+ },
+ "XiaomiMiMo/MiMo-V2.5-Pro": {
+  "params": 1023182841600,
+  "weightBytes": 1033122028800,
+  "gated": false,
+  "license": "mit"
+ },
+ "XiaomiMiMo/MiMo-V2.6-Flash-RL": {
+  "params": 310756322688,
+  "weightBytes": 314857666816,
+  "gated": false,
+  "license": "mit"
+ },
+ "XiaomiMiMo/MiMo-V2.6-Pro-RL": {
+  "params": 1024216603392,
+  "weightBytes": 1034863969536,
+  "gated": false,
+  "license": "mit"
+ },
+ "XingChen-AGI/Xing4.0-29B-A4B": {
+  "params": 31215031088,
+  "weightBytes": 62430067168,
+  "gated": false,
+  "license": "apache-2.0"
+ },
+ "zai-org/GLM-4.5": {
+  "params": 358337791296,
+  "weightBytes": 716675611392,
+  "gated": false,
+  "license": "mit"
+ },
+ "zai-org/GLM-4.5-Air": {
+  "params": 110468824832,
+  "weightBytes": 220937661440,
+  "gated": false,
+  "license": "mit"
+ },
+ "zai-org/GLM-4.5V": {
+  "params": 107710933120,
+  "weightBytes": 215421877760,
+  "gated": false,
+  "license": "mit"
+ },
+ "zai-org/GLM-4.6": {
+  "params": 356785898816,
+  "weightBytes": 713571826432,
+  "gated": false,
+  "license": "mit"
+ },
+ "zai-org/GLM-4.6V": {
+  "params": 107710933120,
+  "weightBytes": 215421877760,
+  "gated": false,
+  "license": "mit"
+ },
+ "zai-org/GLM-4.7": {
+  "params": 358337791296,
+  "weightBytes": 716675611392,
+  "gated": false,
+  "license": "mit"
+ },
+ "zai-org/GLM-4.7-Flash": {
+  "params": 31221488576,
+  "weightBytes": 62442983168,
+  "gated": false,
+  "license": "mit"
+ },
+ "zai-org/GLM-5": {
+  "params": 753864139008,
+  "weightBytes": 1507728316928,
+  "gated": false,
+  "license": "mit"
+ },
+ "zai-org/GLM-5.1": {
+  "params": 753864139008,
+  "weightBytes": 1507728316928,
+  "gated": false,
+  "license": "mit"
+ },
+ "zai-org/GLM-5.2": {
+  "params": 753329940480,
+  "weightBytes": 1506659919872,
+  "gated": false,
+  "license": "mit"
+ },
+ "zai-org/GLM-5.3": {
+  "params": 753329940480,
+  "weightBytes": 755433728000,
+  "gated": false,
+  "license": "other"
+ },
+ "zai-org/GLM-5.3-Flash": {
+  "params": 321323031390,
+  "weightBytes": 328250014584,
+  "gated": false,
+  "license": "mit"
+ }
+}

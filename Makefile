@@ -12,11 +12,10 @@ HISTORY_DIR ?= $(CURDIR)/history
 # when a browser loads the page).
 HISTORY_FETCH_HOURS ?= 12
 
-# Detect container tool (defaults to docker if available, else podman)
-DOCKER_ENGINE ?= $(shell which docker 2>/dev/null || which podman 2>/dev/null || echo docker)
-PODMAN_ENGINE ?= $(shell which podman 2>/dev/null || which docker 2>/dev/null || echo podman)
+# This project uses podman (rootless) for building and running the image.
+ENGINE ?= podman
 
-.PHONY: help container run stop clean logs build-app install fake-history
+.PHONY: help container run stop clean logs build-app install fake-history hf-params
 
 help:
 	@echo "OpenRouter Dashboard Container Management"
@@ -27,6 +26,7 @@ help:
 	@echo "  make logs      - View container logs"
 	@echo "  make clean     - Stop container and remove image"
 	@echo "  make fake-history - Write 30 days of synthetic snapshots into $(HISTORY_DIR)"
+	@echo "  make hf-params - Refresh parameter counts of open-weight models from Hugging Face"
 	@echo "  make install   - Merge $(OPENCODE_DIR) into the user-wide OpenCode config (~/.config/opencode)"
 
 build-app:
@@ -34,31 +34,31 @@ build-app:
 	npm run build
 
 container: build-app
-	@echo "Building container image '$(IMAGE_NAME)' using $(DOCKER_ENGINE)..."
-	$(DOCKER_ENGINE) build -t $(IMAGE_NAME) .
+	@echo "Building container image '$(IMAGE_NAME)' using $(ENGINE)..."
+	$(ENGINE) build -t $(IMAGE_NAME) .
 
 # Written files must belong to the host user: rootless podman needs keep-id
-# (a plain --user would map to a subordinate uid); docker takes --user.
+# (a plain --user would map to a subordinate uid).
 # :Z relabels the volume for SELinux hosts and is ignored elsewhere.
-USER_FLAGS = $(if $(findstring podman,$(PODMAN_ENGINE)),--userns=keep-id,--user $(shell id -u):$(shell id -g))
+USER_FLAGS = --userns=keep-id
 
 run:
 	@mkdir -p $(OPENCODE_DIR) $(HISTORY_DIR)
-	@echo "Starting container '$(CONTAINER_NAME)' using $(PODMAN_ENGINE) on http://localhost:$(PORT)..."
-	$(PODMAN_ENGINE) run -d --rm --name $(CONTAINER_NAME) -p $(PORT):8080 $(USER_FLAGS) \
+	@echo "Starting container '$(CONTAINER_NAME)' using $(ENGINE) on http://localhost:$(PORT)..."
+	$(ENGINE) run -d --rm --name $(CONTAINER_NAME) -p $(PORT):8080 $(USER_FLAGS) \
 		-v $(OPENCODE_DIR):/app/.opencode:Z -v $(HISTORY_DIR):/app/history:Z -e HISTORY_FETCH_HOURS=$(HISTORY_FETCH_HOURS) -e OPENCODE_DIR_HOST=$(OPENCODE_DIR) $(IMAGE_NAME)
 	@echo "Dashboard active at: http://localhost:$(PORT)"
 
 stop:
 	@echo "Stopping container '$(CONTAINER_NAME)'..."
-	-$(PODMAN_ENGINE) stop $(CONTAINER_NAME)
+	-$(ENGINE) stop $(CONTAINER_NAME)
 
 logs:
-	$(PODMAN_ENGINE) logs -f $(CONTAINER_NAME)
+	$(ENGINE) logs -f $(CONTAINER_NAME)
 
 clean: stop
 	@echo "Removing image '$(IMAGE_NAME)'..."
-	-$(PODMAN_ENGINE) rmi $(IMAGE_NAME)
+	-$(ENGINE) rmi $(IMAGE_NAME)
 
 # Install the generated config user-wide: merges $(OPENCODE_DIR)/opencode.jsonc
 # into ~/.config/opencode/opencode.jsonc and copies the plugin (see
@@ -70,3 +70,8 @@ install:
 # bundled src/data/snapshot.json. Never overwrites a real (non-synthetic) record.
 fake-history:
 	HISTORY_DIR=$(HISTORY_DIR) node scripts/generate-fake-history.ts
+
+# Parameter counts / licences of open-weight models (the matrix's VRAM bubble
+# size) from the Hugging Face Hub into src/data/hfModels.json.
+hf-params:
+	node scripts/fetch-hf-params.ts

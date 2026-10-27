@@ -14,7 +14,7 @@ import {
 } from 'recharts';
 import type { ProcessedModel, AxisMetricKey } from '../types/openrouter';
 import { AXIS_OPTIONS } from '../types/openrouter';
-import { getMetricValue, calculateParetoFrontier, findMarginalGainWinners, findValueRecoveryModel, computePickGain, getProviderColor } from '../services/modelService';
+import { getMetricValue, calculateParetoFrontier, findMarginalGainWinners, findValueRecoveryModel, computePickGain, getProviderColor, estimateVramGB } from '../services/modelService';
 import { loadDay, type DaySummary } from '../services/history';
 import { HistoryTimeline, type TimelineEntry } from './HistoryTimeline';
 import { Search, Layers, Info, Sparkles, Sliders, ExternalLink, Zap, Repeat } from 'lucide-react';
@@ -23,6 +23,11 @@ import { Search, Layers, Info, Sparkles, Sliders, ExternalLink, Zap, Repeat } fr
 const X_AXIS_KEY: AxisMetricKey = 'blendedCostPerM';
 
 const PLAY_STEP_MS = 900;
+
+// Bubble fill when the "VRAM" size has no parameter count for the model.
+const NO_VRAM_COLOR = '#475569';
+
+const formatGB = (gb: number) => gb >= 100 ? `${Math.round(gb)} GB` : `${gb.toFixed(gb >= 10 ? 0 : 1)} GB`;
 
 interface ScatterPlotViewProps {
   models: ProcessedModel[];
@@ -79,7 +84,7 @@ export const ScatterPlotView: React.FC<ScatterPlotViewProps> = ({
   filterImageOutputOnly,
   setFilterImageOutputOnly,
 }) => {
-  const [sizeMetric, setSizeMetric] = useState<'context' | 'cost' | 'equal'>('context');
+  const [sizeMetric, setSizeMetric] = useState<'context' | 'cost' | 'vram' | 'equal'>('context');
   const [excludeBatch, setExcludeBatch] = useState<boolean>(true);
 
   // Timeline: one entry per recorded day. Today's live fetch is the last entry
@@ -253,9 +258,13 @@ export const ScatterPlotView: React.FC<ScatterPlotViewProps> = ({
         z = Math.max(30, Math.min(600, Math.log2(m.contextLength / 1000 + 1) * 60));
       } else if (sizeMetric === 'cost') {
         z = Math.max(30, Math.min(600, Math.log10(m.blendedCostPerM + 1) * 150));
+      } else if (sizeMetric === 'vram') {
+        // Log scale: estimates span ~1 GB (small models) to ~1 TB (largest MoEs).
+        z = m.params ? Math.max(30, Math.min(600, Math.log2(estimateVramGB(m.params) + 1) * 60)) : 30;
       }
 
-      const color = getProviderColor(m.provider);
+      const noVram = sizeMetric === 'vram' && !m.params;
+      const color = noVram ? { hex: NO_VRAM_COLOR } : getProviderColor(m.provider);
       const isPareto = paretoIds.has(m.id);
       const isBudgetKnee = kneeWinners.budgetKnee?.id === m.id;
       const isValueRecovery = valueRecoveryModel?.id === m.id;
@@ -270,7 +279,8 @@ export const ScatterPlotView: React.FC<ScatterPlotViewProps> = ({
         isPareto,
         isBudgetKnee,
         isValueRecovery,
-        isSelected
+        isSelected,
+        noVram
       };
     });
   }, [filteredModels, yAxisKey, sizeMetric, paretoIds, kneeWinners, valueRecoveryModel, selectedModel]);
@@ -364,8 +374,12 @@ export const ScatterPlotView: React.FC<ScatterPlotViewProps> = ({
               >
                 <option value="context">Context Size</option>
                 <option value="cost">Blended Cost</option>
+                <option value="vram">VRAM (open weights)</option>
                 <option value="equal">Uniform Size</option>
               </select>
+              {sizeMetric === 'vram' && (
+                <span className="text-[10px] text-slate-500">≈ 4-bit estimate · gray = closed or size unknown</span>
+              )}
             </div>
 
             <div className="flex flex-col gap-1">
@@ -675,6 +689,26 @@ export const ScatterPlotView: React.FC<ScatterPlotViewProps> = ({
                           <div className="text-[10px] text-slate-400 pt-1">
                             Context: <span className="text-slate-200 font-semibold">{Math.round(m.contextLength / 1000)}k tokens</span>
                           </div>
+
+                          <div className="text-[10px] text-slate-400">
+                            {m.params ? (
+                              <>
+                                Open weights: <span className="text-slate-200 font-semibold">{(m.params / 1e9).toFixed(m.params < 1e10 ? 1 : 0)}B params</span>
+                                {m.paramsSource === 'name' && ' (from name)'}
+                                {m.hfGated && ' · gated'}
+                                {m.hfLicense && ` · ${m.hfLicense}`}
+                                <div>
+                                  VRAM ≈ <span className="text-slate-200 font-semibold">{formatGB(estimateVramGB(m.params, 4))}</span> 4-bit
+                                  {' · '}{formatGB(estimateVramGB(m.params, 8))} 8-bit
+                                  {' · '}{formatGB(estimateVramGB(m.params, 16))} 16-bit
+                                </div>
+                              </>
+                            ) : m.hfId ? (
+                              <>Open weights ({m.hfId}), size unknown</>
+                            ) : (
+                              <>No open weights listed</>
+                            )}
+                          </div>
                         </div>
                       );
                     }
@@ -727,7 +761,7 @@ export const ScatterPlotView: React.FC<ScatterPlotViewProps> = ({
 
                     let stroke = entry.color;
                     let strokeWidth = 1.5;
-                    let opacity = 0.85;
+                    let opacity = entry.noVram ? 0.25 : 0.85;
 
                     if (isSelected) {
                       stroke = '#ffffff';
@@ -746,6 +780,7 @@ export const ScatterPlotView: React.FC<ScatterPlotViewProps> = ({
                       strokeWidth = 2.5;
                       opacity = 1;
                     }
+                    if (entry.noVram && !isSelected) opacity = Math.min(opacity, 0.35);
 
                     return (
                       <Cell

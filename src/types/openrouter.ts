@@ -3,6 +3,8 @@ export interface OpenRouterModelRaw {
   name: string;
   canonical_slug?: string;
   hugging_face_id?: string | null;
+  // Set on `~…-latest` aliases: the model the alias currently points to.
+  alias_target?: { name: string; slug: string } | null;
   created?: number;
   description?: string;
   context_length: number;
@@ -85,6 +87,16 @@ export interface ProcessedModel {
   hasReasoning: boolean;
   reasoningEfforts: string[];
   isModerated: boolean;
+
+  // Open weights (best effort, see estimateVramGB): the Hugging Face repo, and
+  // the total parameter count from its safetensors metadata, else parsed from
+  // the model id ("…-70b", "8x22b"). null = closed or unknown size.
+  hfId: string | null;
+  params: number | null;
+  paramsSource: 'hf' | 'name' | null;
+  downloadBytes: number | null;
+  hfGated: boolean;
+  hfLicense: string | null;
   raw: OpenRouterModelRaw;
 }
 

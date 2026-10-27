@@ -41,6 +41,15 @@ flagged `synthetic: true` (shown as such in the UI), anchored on the earliest re
 joins it without a jump (falls back to `src/data/snapshot.json`); retirements are bundled-snapshot
 models the anchor no longer lists. Never overwrites a real record.
 
+**VRAM bubble size (2026-10-27).** Best effort, indicative only. `scripts/fetch-hf-params.ts`
+(`make hf-params`) looks up every `hugging_face_id` (live + bundled snapshot) on the Hugging Face Hub and
+writes `src/data/hfModels.json` (total params from safetensors metadata, native weight bytes, gated,
+licence). Repos the Hub doesn't answer keep their previous entry. `processModels` in `modelService.ts`
+gives `~…-latest` aliases their `alias_target`'s id; with no Hub count, `parseParamsFromName` reads
+"70b"/"8x22b" from the id (MoE "a22b" active counts are skipped). `estimateVramGB = params × bits/8 × 1.2`,
+4-bit for the bubble, with 4/8/16-bit in the tooltip. Models with no count are gray. On 2026-10-27 the
+bundle had 189 of 440 models sized, 6 of them from the name.
+
 Four tabs: **2D Matrix** (scatter plot) · **OpenCode Config** (generator) · **Catalog Table** ·
 **Methodology** (`MethodologyView.tsx` — documents every formula below, with references).
 
@@ -156,8 +165,10 @@ answers — so it is hidden on plain static hosting.
 `server/server.ts` directly (Node type stripping, no npm deps) — serves `dist/` + the endpoint on
 :8080. Replaced nginx for that reason (~50 MB vs ~20 MB). `make run` mounts `OPENCODE_DIR`
 (default `./.opencode`; point it at another project's `.opencode/`) on `/app/.opencode:Z` and passes
-`OPENCODE_DIR_HOST` (display only: the UI shows host paths, not `/app/…`), with `--userns=keep-id` on podman / `--user uid:gid`
-on docker so files are host-owned. Verified 2026-10-19 with rootless podman: written file uid 1000,
+`OPENCODE_DIR_HOST` (display only: the UI shows host paths, not `/app/…`), with `--userns=keep-id` so files are host-owned.
+**The project uses podman only** (`ENGINE ?= podman` in the Makefile, for build and run; user's
+choice 2026-10-27). Docker was dropped after `make container` built with docker while `make run` ran
+podman's stale image. Verified 2026-10-19 with rootless podman: written file uid 1000,
 traversal (`/../../etc/passwd`) returns `index.html`, SIGTERM handled (stop in 0.2 s).
 
 **Principle (2026-10-19): defaults are all Budget Knee picks; anything pricier is opt-in and

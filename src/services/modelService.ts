@@ -1,6 +1,11 @@
 import type { OpenRouterModelRaw, ProcessedModel, AxisMetricKey } from '../types/openrouter';
 import snapshotData from '../data/snapshot.json';
 import imageApiModelIds from '../data/imageApiModels.json';
+import hfModelsData from '../data/hfModels.json';
+
+interface HfEntry { params: number | null; weightBytes: number | null; gated: boolean; license: string | null }
+// Written by scripts/fetch-hf-params.ts (`make hf-params`), keyed by Hugging Face repo id.
+const HF_MODELS = hfModelsData as Record<string, HfEntry>;
 
 export const PROVIDER_COLORS: Record<string, { bg: string; border: string; hex: string }> = {
   'OpenAI': { bg: 'rgba(16, 185, 129, 0.2)', border: '#10b981', hex: '#10b981' },
@@ -220,7 +225,39 @@ export const EXTRA_IMAGE_MODELS: OpenRouterModelRaw[] = [
   }
 ];
 
-export function processRawModel(raw: OpenRouterModelRaw): ProcessedModel {
+// Total parameters from a model id: "llama-3.1-70b" → 70e9, "wizardlm-2-8x22b" → 176e9.
+// A MoE's active count ("…-235b-a22b") is skipped — all experts must fit in memory.
+export function parseParamsFromName(id: string): number | null {
+  const name = id.split('/').pop() ?? id;
+  for (const m of name.matchAll(/(?:(\d+)x)?(\d+(?:\.\d+)?)b(?![a-z0-9])/gi)) {
+    if (m.index > 0 && /a/i.test(name[m.index - 1])) continue;
+    return (m[1] ? Number(m[1]) : 1) * Number(m[2]) * 1e9;
+  }
+  return null;
+}
+
+function openWeightsInfo(raw: OpenRouterModelRaw, hfId: string | null) {
+  const hf = hfId ? HF_MODELS[hfId] : undefined;
+  const fromName = parseParamsFromName(raw.id) ?? (hfId ? parseParamsFromName(hfId) : null);
+  const params = hf?.params ?? fromName;
+  return {
+    hfId,
+    params,
+    paramsSource: hf?.params ? 'hf' as const : params ? 'name' as const : null,
+    downloadBytes: hf?.weightBytes ?? null,
+    hfGated: hf?.gated ?? false,
+    hfLicense: hf?.license ?? null,
+  };
+}
+
+// Memory to run a model locally: weights at `bitsPerWeight` plus ~20% for the
+// KV cache at a modest context, activations and runtime buffers. Indicative
+// only — long contexts need much more.
+export function estimateVramGB(params: number, bitsPerWeight = 4): number {
+  return (params * bitsPerWeight) / 8 / 1e9 * 1.2;
+}
+
+export function processRawModel(raw: OpenRouterModelRaw, hfIdOverride?: string | null): ProcessedModel {
   const promptVal = parseFloat(raw.pricing?.prompt || '0');
   const completionVal = parseFloat(raw.pricing?.completion || '0');
   
@@ -275,6 +312,7 @@ export function processRawModel(raw: OpenRouterModelRaw): ProcessedModel {
     hasReasoning: !!raw.reasoning,
     reasoningEfforts: raw.reasoning?.supported_efforts || [],
     isModerated: !!raw.top_provider?.is_moderated,
+    ...openWeightsInfo(raw, hfIdOverride ?? (raw.hugging_face_id?.trim() || null)),
     raw
   };
 }
@@ -287,15 +325,21 @@ export function processRawModel(raw: OpenRouterModelRaw): ProcessedModel {
 // (src/data/imageApiModels.json) is the offline fallback.
 function restrictToImageApi(base: ProcessedModel[], imageApiIds: Set<string>): ProcessedModel[] {
   const baseIds = new Set(base.map(m => m.id));
-  const extras = EXTRA_IMAGE_MODELS.map(processRawModel)
+  const extras = EXTRA_IMAGE_MODELS.map(r => processRawModel(r))
     .filter(m => !baseIds.has(m.id) && imageApiIds.has(m.id));
   return [...base, ...extras].map(m =>
     m.t2iLeaderboardElo !== null && !imageApiIds.has(m.id) ? { ...m, t2iLeaderboardElo: null } : m
   );
 }
 
+// `~…-latest` aliases carry no hugging_face_id of their own; borrow their target's.
+function processModels(raws: OpenRouterModelRaw[]): ProcessedModel[] {
+  const hfIds = new Map(raws.map(r => [r.id, r.hugging_face_id?.trim() || null]));
+  return raws.map(r => processRawModel(r, r.alias_target ? hfIds.get(r.alias_target.slug) : null));
+}
+
 export function getInitialModels(): ProcessedModel[] {
-  const base = (snapshotData as OpenRouterModelRaw[]).map(processRawModel);
+  const base = processModels(snapshotData as OpenRouterModelRaw[]);
   return restrictToImageApi(base, new Set(imageApiModelIds));
 }
 
@@ -317,7 +361,7 @@ export interface RawSnapshot {
 }
 
 export function processSnapshot(snapshot: RawSnapshot): ProcessedModel[] {
-  return restrictToImageApi(snapshot.models.map(processRawModel), new Set(snapshot.imageApiModels));
+  return restrictToImageApi(processModels(snapshot.models), new Set(snapshot.imageApiModels));
 }
 
 export async function fetchLiveSnapshot(): Promise<RawSnapshot> {

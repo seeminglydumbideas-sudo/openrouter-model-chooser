@@ -37,7 +37,7 @@ Batch-only (`:batch`) prices are excluded so the numbers reflect interactive use
 
 ## 🚀 Quick Start
 
-**Container** (no local toolchain besides `make`, Node and podman/docker):
+**Container** (no local toolchain besides `make`, Node and podman):
 
 ```bash
 make container   # build the app and the image

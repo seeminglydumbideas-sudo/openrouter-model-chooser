@@ -299,7 +299,15 @@ export const ScatterPlotView: React.FC<ScatterPlotViewProps> = ({
     );
   };
 
-  const selectAllProviders = () => setSelectedProviders([]);
+  // "All" is a real toggle: lit only when every provider chip is selected.
+  // Clicking it selects every chip, or clears them all if they already are.
+  // Deselecting any chip then naturally un-lights "All".
+  // (An empty selection still means "no provider filter".)
+  const allProvidersSelected =
+    availableProviders.length > 0 &&
+    availableProviders.every(p => selectedProviders.includes(p));
+  const toggleAllProviders = () =>
+    setSelectedProviders(allProvidersSelected ? [] : [...availableProviders]);
 
   return (
     <div className="flex flex-col gap-6 p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto w-full">
@@ -477,9 +485,9 @@ export const ScatterPlotView: React.FC<ScatterPlotViewProps> = ({
           <div className="flex flex-wrap items-center gap-1.5 pt-2 border-t border-slate-800/80">
             <span className="text-[11px] font-semibold text-slate-400 mr-1">Providers:</span>
             <button
-              onClick={selectAllProviders}
+              onClick={toggleAllProviders}
               className={`rounded-md px-2 py-0.5 text-[11px] font-medium transition-colors ${
-                selectedProviders.length === 0
+                allProvidersSelected
                   ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 font-bold'
                   : 'bg-slate-900 text-slate-400 border border-slate-800 hover:text-white'
               }`}

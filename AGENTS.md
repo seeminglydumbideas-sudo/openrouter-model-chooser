@@ -370,4 +370,8 @@ discipline. `reasoning` keeps the opposite rule on purpose.
   the frontier's top point, or a min points-per-doubling. Undecided.
 - `/deep` command and picker labels not yet seen in the TUI itself.
 - Does `task: { "deep-worker": deny }` actually *enforce* at call time, or only resolve?
+- **Intelligence coverage drop (2026-10-28):** OpenRouter's `artificial_analysis.intelligence_index`
+  went from ~282 models to 47 (91 lost the block, 144 now `null`; surviving values shifted, so a
+  likely index rescale). Coding/Agentic unaffected. The matrix now opens on **Coding** (`App.tsx`)
+  — switch back when coverage recovers. Intelligence picks (`plan`, `title`, `/deep`) still use the thin set.
 - Uncommitted: `src/components/OpenCodeConfigView.tsx` has staged + unstaged changes.

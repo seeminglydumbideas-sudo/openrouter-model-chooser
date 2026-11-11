@@ -23,9 +23,11 @@ export default function App() {
   const [activeTab, setActiveTab] = useState<'scatter' | 'opencode' | 'table' | 'methodology'>('scatter');
   const [selectedModelDetail, setSelectedModelDetail] = useState<ProcessedModel | null>(null);
   
-  const [activePresetId, setActivePresetId] = useState<string | null>('intelligence');
+  // Default to Coding: since 2026-10-28 OpenRouter reports intelligence_index for
+  // only ~47 models (was ~280); Coding still covers ~165.
+  const [activePresetId, setActivePresetId] = useState<string | null>('coding');
   
-  const [yAxisKey, setYAxisKey] = useState<AxisMetricKey>('intelligenceIndex');
+  const [yAxisKey, setYAxisKey] = useState<AxisMetricKey>('codingIndex');
   const [isXLog, setIsXLog] = useState<boolean>(true);
   const [isYLog, setIsYLog] = useState<boolean>(false);
   const [showPareto, setShowPareto] = useState<boolean>(true);
